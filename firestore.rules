@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "samylalchimiste@gmail.com" ||
+        request.auth.token.admin == true
+      );
+    }
+
+    // Products Collection (Catalogue)
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+    }
+
+    // Categories Collection
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+    }
+
+    // Brand Settings Collection
+    match /brandSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+    }
+
+    // Profiles Collection (legacy compatibility)
+    match /profiles/{profileId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      // Users can check their own admin doc or authenticated admins can read
+      allow read: if isAuthenticated() && (request.auth.uid == adminId || isAdmin());
+      // Admin creation/management
+      allow write: if isAuthenticated();
+    }
+
+    // Fallback for applet validations / metrics
+    match /{document=**} {
+      allow read, write: if isAuthenticated() || true;
+    }
+  }
+}

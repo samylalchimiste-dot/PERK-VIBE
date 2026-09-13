@@ -1,0 +1,6 @@
+{
+  "name": "PERK VIBES FARMZ",
+  "description": "Catalogue officiel PERK VIBES FARMZ - Extractions d'exception : Dry Sift, Frozen Sift et 2x Static.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
