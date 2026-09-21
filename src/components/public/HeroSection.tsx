@@ -22,7 +22,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ totalActiveCount }) =>
           La connexion<br />ultime.
         </h1>
         <p className="text-xs sm:text-sm text-purple-200/80 max-w-xs sm:max-w-md mx-auto leading-relaxed font-medium">
-          Trouve les meilleures sélections de la communauté PERK VIBES FARMZ, notées en direct par les connaisseurs.
+          Trouve les meilleures sélections de la communauté TRICHOME MONTANE, notées en direct par les connaisseurs.
         </p>
       </div>
 

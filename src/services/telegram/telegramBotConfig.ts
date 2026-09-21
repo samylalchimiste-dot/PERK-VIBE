@@ -1,12 +1,12 @@
 /**
  * Telegram Bot Configuration & Integration
- * Connected to official bot: PERK VIBES FARMZ BOT ⚡ (@F2nOfficiel_Bot)
+ * Connected to official bot: TRICHOME MONTANE BOT ⚡ (@F2nOfficiel_Bot)
  */
 
 export const TELEGRAM_BOT_CONFIG = {
   token: '8554779751:AAEgcpOnFeaP3MJhIgyORUCtExk6Pt0d8Fc',
   botUsername: 'F2nOfficiel_Bot',
-  botName: 'PERK VIBES FARMZ BOT ⚡',
+  botName: 'TRICHOME MONTANE BOT ⚡',
   botUrl: 'https://t.me/F2nOfficiel_Bot',
   apiUrl: 'https://api.telegram.org/bot8554779751:AAEgcpOnFeaP3MJhIgyORUCtExk6Pt0d8Fc',
 };

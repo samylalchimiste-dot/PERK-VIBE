@@ -83,22 +83,22 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
                   className="w-full h-full object-cover rounded-full transition-transform duration-500 group-hover:scale-105"
                 />
               ) : (
-                <span className="font-extrabold text-2xl tracking-tighter text-emerald-400">
-                  {brand.brandName || 'PERK VIBES FARMZ'}
+                <span className="font-extrabold text-2xl tracking-tighter text-amber-400">
+                  {brand.brandName || 'TRICHOME MONTANE'}
                 </span>
               )}
             </div>
           </div>
 
           {/* Verified Official Seal Dot */}
-          <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-zinc-900 border-2 border-zinc-950 flex items-center justify-center text-[10px] text-emerald-400 shadow-md">
+          <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-zinc-900 border-2 border-zinc-950 flex items-center justify-center text-[10px] text-amber-400 shadow-md">
             ✓
           </div>
         </div>
 
         {/* Brand Name */}
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white uppercase mb-1">
-          {brand.brandName || 'PERK VIBES FARMZ'}
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white uppercase mb-1" style={{ fontFamily: "'Bebas Neue', 'Montserrat', sans-serif" }}>
+          {brand.brandName || 'TRICHOME MONTANE'}
         </h1>
 
         {/* Tagline */}

@@ -19,20 +19,30 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, count }) =
     navigate(`/shop?category=${category.id}`);
   };
 
-  const bgImage = category.image || 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=800&q=80';
+  const bgImage = category.image || '';
 
   return (
     <div
       onClick={handleClick}
       className="group relative h-48 sm:h-56 w-full rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700 cursor-pointer shadow-lg transition-all duration-300 active:scale-[0.98]"
     >
-      {/* Background Image */}
-      <img
-        src={bgImage}
-        alt={category.name}
-        loading="lazy"
-        className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-60 group-hover:opacity-75"
-      />
+      {/* Background Image or Gradient */}
+      {bgImage ? (
+        <img
+          src={bgImage}
+          alt={category.name}
+          loading="lazy"
+          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-60 group-hover:opacity-75"
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-[#0d131f] to-zinc-950 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/40 border border-zinc-700/30 flex items-center justify-center text-zinc-500 group-hover:scale-110 transition duration-500">
+            <span className="font-mono text-xl font-black text-cyan-400/60">
+              {category.name.slice(0, 2).toUpperCase()}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Dark Vignette Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/40 to-black/30" />

@@ -12,7 +12,9 @@ import {
   Info, 
   Clock, 
   MessageCircle, 
-  Lock 
+  Lock,
+  Video,
+  Play
 } from 'lucide-react';
 import { Product, BrandSettings } from '../../types';
 import { getProduct, subscribeBrandSettings, DEFAULT_BRAND_SETTINGS, subscribeProducts } from '../../services/firebase/catalog';
@@ -30,6 +32,7 @@ export const ProductDetailPage: React.FC = () => {
   const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND_SETTINGS);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(0);
+  const [activeMedia, setActiveMedia] = useState<'photo' | 'video'>('photo');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'details' | 'shipping' | 'care'>('details');
@@ -152,8 +155,8 @@ export const ProductDetailPage: React.FC = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${product.name} — ${brand.brandName || 'PERK VIBES FARMZ'}`,
-          text: `Découvrez ${product.name} sur le menu officiel ${brand.brandName || 'PERK VIBES FARMZ'}`,
+          title: `${product.name} — ${brand.brandName || 'TRICHOME MONTANE'}`,
+          text: `Découvrez ${product.name} sur le menu officiel ${brand.brandName || 'TRICHOME MONTANE'}`,
           url,
         });
         return;
@@ -172,11 +175,11 @@ export const ProductDetailPage: React.FC = () => {
     hapticFeedback('medium');
     playClickSound();
 
-    const botUsername = brand.contactLinks?.botUsername || 'PerkVibesFarmz_Bot';
+    const botUsername = brand.contactLinks?.botUsername || 'F2nOfficiel_Bot';
     const cleanUsername = botUsername.replace(/^@/, '');
     const refCode = product.sku || product.id.slice(0, 8);
     const message = encodeURIComponent(
-      `Bonjour Perk Vibes Farmz, je souhaite commander :\n\n• Produit : ${product.name}\n• Référence : ${refCode}\n• Prix : ${product.price} ${product.currency || '€'}\n\nEst-il toujours disponible pour envoi / livraison ?`
+      `Bonjour Trichome Montane, je souhaite commander :\n\n• Produit : ${product.name}\n• Référence : ${refCode}\n• Prix : ${product.price} ${product.currency || '€'}\n\nEst-il toujours disponible pour envoi / livraison ?`
     );
 
     // Deep link directly into Telegram
@@ -191,7 +194,7 @@ export const ProductDetailPage: React.FC = () => {
     const cleanPhone = brand.contactLinks.whatsapp.replace(/[^0-9]/g, '');
     const refCode = product.sku || product.id.slice(0, 8);
     const message = encodeURIComponent(
-      `Bonjour Perk Vibes Farmz, je souhaite commander : ${product.name} (Réf : ${refCode}) au prix de ${product.price} ${product.currency || '€'}.`
+      `Bonjour Trichome Montane, je souhaite commander : ${product.name} (Réf : ${refCode}) au prix de ${product.price} ${product.currency || '€'}.`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
@@ -211,7 +214,7 @@ export const ProductDetailPage: React.FC = () => {
             className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 hover:text-white transition"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            <span>Menu PERK VIBES FARMZ</span>
+            <span>Menu TRICHOME MONTANE</span>
           </button>
 
           <button
@@ -224,90 +227,137 @@ export const ProductDetailPage: React.FC = () => {
           </button>
         </div>
 
-        {/* 1. HERO PHOTO GALLERY WITH SWIPE & THUMBNAILS */}
+        {/* 1. HERO PHOTO / VIDEO GALLERY */}
         <div className="space-y-3">
-          <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className="relative w-full aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-950 border border-zinc-800/90 shadow-2xl group select-none"
-          >
-            <img
-              src={currentPhoto}
-              alt={product.name}
-              className={`w-full h-full object-cover object-center transition-all duration-500 ${
-                isSoldOut ? 'opacity-60 grayscale' : 'opacity-100'
-              }`}
-            />
+          {activeMedia === 'video' && product.videoUrl ? (
+            <div className="relative w-full aspect-[4/5] rounded-3xl overflow-hidden bg-black border border-zinc-800/90 shadow-2xl flex items-center justify-center group">
+              <video
+                src={product.videoUrl}
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain bg-black"
+              />
 
-            {/* Subtle Gradient vignette */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
-
-            {/* Badges Top Left */}
-            <div className="absolute top-4 left-4 flex flex-wrap items-center gap-1.5 z-10">
-              {isSoldOut ? (
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-black/80 text-zinc-400 border border-zinc-700 backdrop-blur-md">
-                  SOLD OUT · ÉPUISÉ
-                </span>
-              ) : isLowStock ? (
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/25 text-amber-300 border border-amber-500/50 backdrop-blur-md">
-                  Stock Limité
-                </span>
-              ) : product.isNew ? (
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-white text-zinc-950 shadow-md">
-                  Nouveau
-                </span>
-              ) : null}
-
-              {product.featured && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-black/70 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
-                  <Sparkles className="w-3 h-3 text-emerald-400" />
-                  Top Shelf
-                </span>
-              )}
-            </div>
-
-            {/* Arrows for Desktop / Tablet */}
-            {photos.length > 1 && (
-              <>
-                <button
-                  onClick={handlePrevPhoto}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition active:scale-90"
-                  aria-label="Photo précédente"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleNextPhoto}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition active:scale-90"
-                  aria-label="Photo suivante"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </>
-            )}
-
-            {/* Photo Counter Pill Bottom Right */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-4 right-4 z-10">
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-mono tracking-widest text-zinc-300 bg-black/70 backdrop-blur-md border border-zinc-700/70">
-                  {selectedPhotoIndex + 1} / {photos.length}
+              {/* Badges Top Left */}
+              <div className="absolute top-4 left-4 z-10">
+                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-black/80 text-emerald-400 border border-emerald-500/40 backdrop-blur-md flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5" />
+                  Vidéo Officielle Batch
                 </span>
               </div>
-            )}
-          </div>
 
-          {/* Miniatures Thumbnails Bar */}
-          {photos.length > 1 && (
+              {/* Switch back to photo button */}
+              <button
+                onClick={() => {
+                  hapticFeedback('light');
+                  setActiveMedia('photo');
+                }}
+                className="absolute top-4 right-4 z-10 px-3 py-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white text-xs font-mono uppercase tracking-wider border border-zinc-700 backdrop-blur-md transition active:scale-95"
+              >
+                ← Voir photos
+              </button>
+            </div>
+          ) : (
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="relative w-full aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-950 border border-zinc-800/90 shadow-2xl group select-none"
+            >
+              <img
+                src={currentPhoto}
+                alt={product.name}
+                className={`w-full h-full object-cover object-center transition-all duration-500 ${
+                  isSoldOut ? 'opacity-60 grayscale' : 'opacity-100'
+                }`}
+              />
+
+              {/* Subtle Gradient vignette */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
+
+              {/* Badges Top Left */}
+              <div className="absolute top-4 left-4 flex flex-wrap items-center gap-1.5 z-10">
+                {isSoldOut ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-black/80 text-zinc-400 border border-zinc-700 backdrop-blur-md">
+                    SOLD OUT · ÉPUISÉ
+                  </span>
+                ) : isLowStock ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/25 text-amber-300 border border-amber-500/50 backdrop-blur-md">
+                    Stock Limité
+                  </span>
+                ) : product.isNew ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-white text-zinc-950 shadow-md">
+                    Nouveau
+                  </span>
+                ) : null}
+
+                {product.featured && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-black/70 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    Top Shelf
+                  </span>
+                )}
+              </div>
+
+              {/* Direct Video Trigger Button if Video available */}
+              {product.videoUrl && (
+                <button
+                  onClick={() => {
+                    hapticFeedback('medium');
+                    playClickSound();
+                    setActiveMedia('video');
+                  }}
+                  className="absolute top-4 right-4 z-10 px-3 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 shadow-xl transition active:scale-95 animate-pulse"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Vidéo Batch</span>
+                </button>
+              )}
+
+              {/* Arrows for Desktop / Tablet */}
+              {photos.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevPhoto}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition active:scale-90"
+                    aria-label="Photo précédente"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextPhoto}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition active:scale-90"
+                    aria-label="Photo suivante"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Photo Counter Pill Bottom Right */}
+              {photos.length > 1 && (
+                <div className="absolute bottom-4 right-4 z-10">
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-mono tracking-widest text-zinc-300 bg-black/70 backdrop-blur-md border border-zinc-700/70">
+                    {selectedPhotoIndex + 1} / {photos.length}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Miniatures Thumbnails Bar with Video option */}
+          {(photos.length > 1 || product.videoUrl) && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {photos.map((url, idx) => (
                 <button
                   key={idx}
                   onClick={() => {
                     hapticFeedback('light');
+                    setActiveMedia('photo');
                     setSelectedPhotoIndex(idx);
                   }}
                   className={`relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border transition-all ${
-                    selectedPhotoIndex === idx
+                    activeMedia === 'photo' && selectedPhotoIndex === idx
                       ? 'border-white ring-2 ring-white/30 scale-105'
                       : 'border-zinc-800 opacity-60 hover:opacity-100'
                   }`}
@@ -315,6 +365,25 @@ export const ProductDetailPage: React.FC = () => {
                   <img src={url} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
+
+              {/* Video Thumbnail Tile */}
+              {product.videoUrl && (
+                <button
+                  onClick={() => {
+                    hapticFeedback('medium');
+                    playClickSound();
+                    setActiveMedia('video');
+                  }}
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border transition-all flex flex-col items-center justify-center bg-zinc-900 ${
+                    activeMedia === 'video'
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/40 scale-105 text-emerald-400 bg-emerald-950/30'
+                      : 'border-zinc-800 text-zinc-400 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <Play className="w-5 h-5 mb-0.5 fill-current" />
+                  <span className="text-[9px] font-mono uppercase font-bold">Vidéo</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -323,7 +392,7 @@ export const ProductDetailPage: React.FC = () => {
         <div className="p-5 rounded-3xl bg-[#111114] border border-zinc-800/80 space-y-3">
           <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
             <span className="uppercase tracking-widest">
-              {product.categoryName || 'PERK VIBES FARMZ'}
+              {product.categoryName || 'TRICHOME MONTANE'}
             </span>
             {product.sku && (
               <span className="text-zinc-500">RÉF : {product.sku}</span>
@@ -478,7 +547,7 @@ export const ProductDetailPage: React.FC = () => {
                 ) : (
                   <div className="space-y-1.5">
                     <p>• Extraction premium 100% têtes de trichomes pures.</p>
-                    <p>• Tamisage et affinage sous contrôle strict {brand.brandName || 'PERK VIBES FARMZ'}.</p>
+                    <p>• Tamisage et affinage sous contrôle strict {brand.brandName || 'TRICHOME MONTANE'}.</p>
                     <p>• Batch numéroté certifié sans matière végétale.</p>
                   </div>
                 )}

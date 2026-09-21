@@ -22,7 +22,10 @@ import {
   ChevronDown,
   Star,
   Flame,
-  ArrowUpDown
+  ArrowUpDown,
+  Video,
+  Play,
+  Loader2
 } from 'lucide-react';
 import { Product, Category, BrandSettings, ProductStockStatus, ProductPublishStatus } from '../../types';
 import { 
@@ -40,6 +43,8 @@ import {
   subscribeBrandSettings,
   updateBrandSettings,
   uploadCatalogImage,
+  uploadCatalogVideo,
+  compressImageToDataURL,
   resetAndSeedPerkVibesFarmz,
   seedCatalogIfEmpty,
   DEFAULT_BRAND_SETTINGS
@@ -149,6 +154,13 @@ export const AdminDashboardPage: React.FC = () => {
   const [prodFormIsNew, setProdFormIsNew] = useState(false);
   const [prodFormSku, setProdFormSku] = useState('');
   const [prodFormImages, setProdFormImages] = useState<string[]>([]);
+  const [storageErrorDetails, setStorageErrorDetails] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [prodFormVideoUrl, setProdFormVideoUrl] = useState('');
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+  const [manualVideoUrl, setManualVideoUrl] = useState('');
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [prodFormDetails, setProdFormDetails] = useState<Array<{ key: string; value: string }>>([
     { key: 'Filtration', value: '90u / 120u' },
     { key: 'Profil Terpénique', value: 'Gas & Fruits Exotiques' },
@@ -159,27 +171,32 @@ export const AdminDashboardPage: React.FC = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [manualImageUrl, setManualImageUrl] = useState('');
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openNewProductModal = () => {
     hapticFeedback('light');
     setEditingProduct(null);
+    setFormError(null);
+    setIsSavingProduct(false);
     setProdFormName('');
     setProdFormDesc('');
     setProdFormPrice('70');
     setProdFormCurrency(brand.currency || '€');
-    setProdFormCategory(categories[0]?.id || '');
+    setProdFormCategory(categories[0]?.id || 'cat_dry');
     setProdFormStock('AVAILABLE');
     setProdFormStatus('published');
     setProdFormFeatured(false);
     setProdFormIsNew(true);
-    setProdFormSku(`PVF-${Math.floor(100 + Math.random() * 900)}`);
+    setProdFormSku(`TM-${Math.floor(100 + Math.random() * 900)}`);
     setProdFormImages([]);
+    setProdFormVideoUrl('');
     setProdFormDetails([
       { key: 'Filtration', value: '90u / 120u' },
       { key: 'Profil Terpénique', value: 'Gas & Fruits Exotiques' },
       { key: 'Texture', value: 'Cold Cure Bader' },
-      { key: 'Origine', value: 'Perk Vibes Farmz' },
+      { key: 'Origine', value: 'TRICHOME MONTANE' },
     ]);
     setIsProductModalOpen(true);
   };
@@ -187,17 +204,20 @@ export const AdminDashboardPage: React.FC = () => {
   const openEditProductModal = (p: Product) => {
     hapticFeedback('light');
     setEditingProduct(p);
+    setFormError(null);
+    setIsSavingProduct(false);
     setProdFormName(p.name);
     setProdFormDesc(p.description || '');
     setProdFormPrice(String(p.price));
     setProdFormCurrency(p.currency || '€');
-    setProdFormCategory(p.categoryId || '');
+    setProdFormCategory(p.categoryId || categories[0]?.id || 'cat_dry');
     setProdFormStock(p.stock);
     setProdFormStatus(p.status);
     setProdFormFeatured(p.featured);
     setProdFormIsNew(p.isNew);
-    setProdFormSku(p.sku || '');
-    setProdFormImages(p.images && p.images.length > 0 ? p.images : [p.mainImage]);
+    setProdFormSku(p.sku || `TM-${Math.floor(100 + Math.random() * 900)}`);
+    setProdFormImages(p.images && p.images.length > 0 ? p.images : (p.mainImage ? [p.mainImage] : []));
+    setProdFormVideoUrl(p.videoUrl || '');
     
     const detailsArr = p.details 
       ? Object.entries(p.details).map(([key, value]) => ({ key, value }))
@@ -212,27 +232,119 @@ export const AdminDashboardPage: React.FC = () => {
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    const fileList = Array.from(files);
+    setPendingFiles(fileList);
+    setStorageErrorDetails(null);
     setIsUploadingImage(true);
-    setUploadProgress(10);
+    setUploadProgress(20);
 
     try {
-      const uploadedUrls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const url = await uploadCatalogImage(file, 'products', (pct) => {
-          setUploadProgress(pct);
+      const totalFiles = fileList.length;
+      for (let i = 0; i < totalFiles; i++) {
+        const file = fileList[i];
+        const baseOffset = Math.round(((i + 0.2) / totalFiles) * 100);
+        setUploadProgress(Math.max(20, baseOffset));
+
+        const url = await uploadCatalogImage(file, 'products/photos', (pct) => {
+          const overall = Math.round(((i + pct / 100) / totalFiles) * 100);
+          setUploadProgress(Math.max(20, Math.min(100, overall)));
         });
-        uploadedUrls.push(url);
+
+        // Add dynamically so the preview shows immediately!
+        setProdFormImages((prev) => [...prev, url]);
       }
-      setProdFormImages((prev) => [...prev, ...uploadedUrls]);
-      showNotice(`${uploadedUrls.length} image(s) ajoutée(s) avec succès`);
+      hapticFeedback('medium');
+      playClickSound();
+      showNotice(`${fileList.length} photo(s) ajoutée(s) et optimisée(s) HD avec succès !`);
+      setPendingFiles([]);
+      setStorageErrorDetails(null);
     } catch (err: any) {
       console.error('Image upload failed:', err);
-      showNotice("Erreur lors de l'envoi de l'image", 'error');
+      // Emergency local fallback:
+      try {
+        const localFallbacks: string[] = [];
+        for (const file of fileList) {
+          const dataUrl = await compressImageToDataURL(file, 1200, 0.82);
+          localFallbacks.push(dataUrl);
+        }
+        setProdFormImages((prev) => [...prev, ...localFallbacks]);
+        showNotice(`${localFallbacks.length} photo(s) ajoutée(s) avec succès !`);
+      } catch {
+        showNotice("Erreur lors de l'envoi des photos", 'error');
+      }
     } finally {
       setIsUploadingImage(false);
       setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSavePendingFilesAsHD = async () => {
+    if (pendingFiles.length === 0) return;
+    try {
+      showNotice('Traitement HD de votre photo en cours...');
+      const localUrls: string[] = [];
+      for (const file of pendingFiles) {
+        const dataUrl = await compressImageToDataURL(file, 1200, 0.85);
+        localUrls.push(dataUrl);
+      }
+      setProdFormImages((prev) => [...prev, ...localUrls]);
+      setStorageErrorDetails(null);
+      setPendingFiles([]);
+      showNotice(`${localUrls.length} photo(s) personnelle(s) ajoutée(s) avec succès !`);
+    } catch (err: any) {
+      showNotice('Impossible de traiter la photo', 'error');
+    }
+  };
+
+  const handleVideoUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    setIsUploadingVideo(true);
+    setVideoUploadProgress(15);
+    setStorageErrorDetails(null);
+
+    try {
+      if (file.size > 30 * 1024 * 1024) {
+        throw new Error('Vidéo trop volumineuse (> 30 Mo). Veuillez utiliser un fichier plus court ou coller un lien direct.');
+      }
+
+      const downloadUrl = await uploadCatalogVideo(file, (pct) => {
+        setVideoUploadProgress(Math.max(15, pct));
+      });
+      setProdFormVideoUrl(downloadUrl);
+      showNotice('Vidéo ajoutée avec succès !');
+    } catch (err: any) {
+      console.warn('Video upload failed:', err);
+      // Fallback: if video is under 15MB, load as local data URL so it plays seamlessly
+      if (file.size <= 15 * 1024 * 1024) {
+        showNotice('Chargement direct de la vidéo...');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          setProdFormVideoUrl(dataUrl);
+          showNotice('Vidéo enregistrée pour ce produit !');
+          setIsUploadingVideo(false);
+          setVideoUploadProgress(0);
+        };
+        reader.onerror = () => {
+          showNotice('Erreur lors du chargement de la vidéo', 'error');
+          setIsUploadingVideo(false);
+          setVideoUploadProgress(0);
+        };
+        reader.readAsDataURL(file);
+        return;
+      } else {
+        const msg = "Stockage cloud indisponible pour les vidéos > 15 Mo. Vous pouvez coller un lien direct vidéo (Telegram, MP4).";
+        setStorageErrorDetails(msg);
+        showNotice(msg, 'error');
+      }
+    } finally {
+      if (!isUploadingVideo) {
+        setIsUploadingVideo(false);
+        setVideoUploadProgress(0);
+      }
+      if (videoInputRef.current) videoInputRef.current.value = '';
     }
   };
 
@@ -260,18 +372,32 @@ export const AdminDashboardPage: React.FC = () => {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prodFormName.trim()) {
-      showNotice('Veuillez renseigner le nom du produit', 'error');
+    setFormError(null);
+
+    const trimmedName = prodFormName.trim();
+    if (!trimmedName) {
+      const msg = 'Veuillez renseigner le nom du produit (strain / batch)';
+      setFormError(msg);
+      showNotice(msg, 'error');
       return;
     }
 
     const priceNum = parseFloat(prodFormPrice) || 0;
     const catObj = categories.find((c) => c.id === prodFormCategory);
-    const categoryName = catObj ? catObj.name : 'Catalogue';
+    const categoryName = catObj ? catObj.name : (categories[0]?.name || 'DRY SIFT');
+    const categoryId = prodFormCategory || categories[0]?.id || 'cat_dry';
 
-    const imagesToSave = prodFormImages.length > 0 
-      ? prodFormImages 
-      : ['https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=800&q=80'];
+    // Ensure we have at least one image - if not provided by user, supply a clean extraction photo so publishing NEVER blocks
+    let imagesToSave = prodFormImages;
+    if (imagesToSave.length === 0) {
+      const defaultCover = 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=75';
+      imagesToSave = [defaultCover];
+    }
+
+    // Safety: limit images to avoid exceeding Firestore's 1MB document limit
+    if (imagesToSave.length > 5) {
+      imagesToSave = imagesToSave.slice(0, 5);
+    }
 
     const detailsRecord: Record<string, string> = {};
     for (const d of prodFormDetails) {
@@ -280,15 +406,25 @@ export const AdminDashboardPage: React.FC = () => {
       }
     }
 
+    // Clean video URL: if it's a huge base64 data url (> 400KB), prevent it from blowing up Firestore
+    let cleanVideoUrl = prodFormVideoUrl.trim();
+    if (cleanVideoUrl.startsWith('data:video') && cleanVideoUrl.length > 500000) {
+      const warning = 'La vidéo locale dépasse la limite de la base. Veuillez plutôt insérer un lien vidéo direct (Telegram ou MP4).';
+      setFormError(warning);
+      showNotice(warning, 'error');
+      return;
+    }
+
+    setIsSavingProduct(true);
     try {
       if (editingProduct) {
         // Update
         await updateProduct(editingProduct.id, {
-          name: prodFormName.trim(),
+          name: trimmedName,
           description: prodFormDesc.trim(),
           price: priceNum,
-          currency: prodFormCurrency,
-          categoryId: prodFormCategory,
+          currency: prodFormCurrency || '€',
+          categoryId,
           categoryName,
           stock: prodFormStock,
           status: prodFormStatus,
@@ -297,34 +433,42 @@ export const AdminDashboardPage: React.FC = () => {
           sku: prodFormSku.trim(),
           images: imagesToSave,
           mainImage: imagesToSave[0],
+          videoUrl: cleanVideoUrl || '',
           details: detailsRecord,
         });
-        showNotice('Produit mis à jour avec succès');
+        showNotice('Produit mis à jour avec succès !');
       } else {
         // Create
         await createProduct({
-          name: prodFormName.trim(),
+          name: trimmedName,
           description: prodFormDesc.trim(),
           price: priceNum,
-          currency: prodFormCurrency,
-          categoryId: prodFormCategory,
+          currency: prodFormCurrency || '€',
+          categoryId,
           categoryName,
           stock: prodFormStock,
           status: prodFormStatus,
           featured: prodFormFeatured,
           isNew: prodFormIsNew,
-          sku: prodFormSku.trim(),
+          sku: prodFormSku.trim() || `TM-${Math.floor(100 + Math.random() * 900)}`,
           images: imagesToSave,
           mainImage: imagesToSave[0],
+          videoUrl: cleanVideoUrl || '',
           details: detailsRecord,
           createdAt: Date.now(),
         });
-        showNotice('Nouveau produit ajouté au menu');
+        showNotice('Nouveau produit publié et ajouté au menu !');
       }
+      hapticFeedback('medium');
+      playClickSound();
       setIsProductModalOpen(false);
     } catch (err: any) {
       console.error('Error saving product:', err);
-      showNotice('Erreur lors de la sauvegarde du produit', 'error');
+      const msg = err?.message || 'Erreur lors de la publication du produit';
+      setFormError(msg);
+      showNotice(msg, 'error');
+    } finally {
+      setIsSavingProduct(false);
     }
   };
 
@@ -441,18 +585,18 @@ export const AdminDashboardPage: React.FC = () => {
   // ==========================================
   // BRAND SETTINGS TAB STATE & ACTIONS
   // ==========================================
-  const [brandFormName, setBrandFormName] = useState(brand.brandName || 'PERK VIBES FARMZ');
+  const [brandFormName, setBrandFormName] = useState(brand.brandName || 'TRICHOME MONTANE');
   const [brandFormTagline, setBrandFormTagline] = useState(brand.tagline || '');
   const [brandFormDesc, setBrandFormDesc] = useState(brand.description || '');
   const [brandFormCurrency, setBrandFormCurrency] = useState(brand.currency || '€');
-  const [brandFormHeroCta, setBrandFormHeroCta] = useState(brand.heroCtaText || 'Découvrir la Collection');
+  const [brandFormHeroCta, setBrandFormHeroCta] = useState(brand.heroCtaText || 'Explorer le Menu');
   const [brandFormBadge, setBrandFormBadge] = useState(brand.badgeText || 'Collection 2026');
 
   const [brandFormProfileImg, setBrandFormProfileImg] = useState(brand.profileImage || '');
   const [brandFormCoverImg, setBrandFormCoverImg] = useState(brand.coverImage || '');
 
-  const [brandFormTelegramBot, setBrandFormTelegramBot] = useState(brand.contactLinks?.botUsername || 'PerkVibesFarmz_Bot');
-  const [brandFormTelegramUrl, setBrandFormTelegramUrl] = useState(brand.contactLinks?.botUrl || '');
+  const [brandFormTelegramBot, setBrandFormTelegramBot] = useState(brand.contactLinks?.botUsername || 'F2nOfficiel_Bot');
+  const [brandFormTelegramUrl, setBrandFormTelegramUrl] = useState(brand.contactLinks?.botUrl || 'https://t.me/F2nOfficiel_Bot');
   const [brandFormChannel, setBrandFormChannel] = useState(brand.contactLinks?.channel || '');
   const [brandFormWhatsApp, setBrandFormWhatsApp] = useState(brand.contactLinks?.whatsapp || '');
   const [brandFormInstagram, setBrandFormInstagram] = useState(brand.contactLinks?.instagram || '');
@@ -463,16 +607,16 @@ export const AdminDashboardPage: React.FC = () => {
 
   // Sync brand state when loaded
   useEffect(() => {
-    setBrandFormName(brand.brandName || 'PERK VIBES FARMZ');
+    setBrandFormName(brand.brandName || 'TRICHOME MONTANE');
     setBrandFormTagline(brand.tagline || '');
     setBrandFormDesc(brand.description || '');
     setBrandFormCurrency(brand.currency || '€');
-    setBrandFormHeroCta(brand.heroCtaText || 'Découvrir la Collection');
+    setBrandFormHeroCta(brand.heroCtaText || 'Explorer le Menu');
     setBrandFormBadge(brand.badgeText || 'Collection 2026');
     setBrandFormProfileImg(brand.profileImage || '');
     setBrandFormCoverImg(brand.coverImage || '');
-    setBrandFormTelegramBot(brand.contactLinks?.botUsername || 'PerkVibesFarmz_Bot');
-    setBrandFormTelegramUrl(brand.contactLinks?.botUrl || '');
+    setBrandFormTelegramBot(brand.contactLinks?.botUsername || 'F2nOfficiel_Bot');
+    setBrandFormTelegramUrl(brand.contactLinks?.botUrl || 'https://t.me/F2nOfficiel_Bot');
     setBrandFormChannel(brand.contactLinks?.channel || '');
     setBrandFormWhatsApp(brand.contactLinks?.whatsapp || '');
     setBrandFormInstagram(brand.contactLinks?.instagram || '');
@@ -543,7 +687,7 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Notice Toast */}
       {notice && (
         <div
-          className={`fixed top-16 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-2xl border backdrop-blur-xl text-xs font-medium animate-in fade-in slide-in-from-top-4 duration-200 ${
+          className={`fixed top-16 right-4 z-[99999] flex items-center gap-2 px-4 py-3 rounded-2xl shadow-2xl border backdrop-blur-xl text-xs font-medium animate-in fade-in slide-in-from-top-4 duration-200 ${
             notice.type === 'success'
               ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/50'
               : 'bg-rose-950/90 text-rose-200 border-rose-500/50'
@@ -558,7 +702,7 @@ export const AdminDashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white uppercase">
-            Gestion du Menu · PERK VIBES FARMZ
+            Gestion du Menu · TRICHOME MONTANE
           </h1>
           <p className="text-xs text-zinc-400 font-mono mt-0.5">
             Gérez vos produits (Dry Sift, Frozen Sift, 2x Static), stocks et identité.
@@ -572,11 +716,11 @@ export const AdminDashboardPage: React.FC = () => {
               hapticFeedback('medium');
               setItemToDelete({ type: 'reseed_farmz' });
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-600/40 text-emerald-300 hover:text-white text-xs font-semibold transition"
-            title="Réinitialiser et recharger le menu officiel PERK VIBES FARMZ"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-600/40 text-amber-300 hover:text-white text-xs font-semibold transition"
+            title="Réinitialiser et recharger le menu officiel TRICHOME MONTANE"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Recharger Menu Farmz</span>
+            <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+            <span>Recharger Menu Officiel</span>
           </button>
 
           {/* Tab Switcher */}
@@ -890,12 +1034,16 @@ export const AdminDashboardPage: React.FC = () => {
                 className="flex items-center justify-between p-4 rounded-2xl bg-[#111114] border border-zinc-800/80 hover:border-zinc-700 transition"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 shrink-0">
-                    <img
-                      src={cat.image || 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=400&q=80'}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 shrink-0 flex items-center justify-center">
+                    {cat.image ? (
+                      <img
+                        src={cat.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Layers className="w-6 h-6 text-zinc-600" />
+                    )}
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">
@@ -1220,70 +1368,97 @@ export const AdminDashboardPage: React.FC = () => {
 
             {/* Modal Form Content */}
             <form onSubmit={handleSaveProduct} className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
+              {/* Form Inline Error Alert */}
+              {formError && (
+                <div className="p-3.5 rounded-2xl bg-rose-950/90 border border-rose-500/70 text-rose-200 text-xs flex items-center gap-2.5 animate-in fade-in">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span className="font-semibold">{formError}</span>
+                </div>
+              )}
+
               {/* Quick Fill Extraction Presets */}
               <div className="p-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">
                     ⚡ Remplissage Rapide Spécialités Farmz :
                   </span>
                   <span className="text-[10px] text-zinc-400">Pré-remplit catégorie et caractéristiques</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => {
-                      const cat = categories.find((c) => c.name.toLowerCase().includes('static')) || categories[0];
+                      const cat = categories.find((c) => c.name.toUpperCase().includes('STATIC')) || categories[0];
                       if (cat) setProdFormCategory(cat.id);
                       setProdFormDetails([
                         { key: 'Filtration', value: '2x Static 99% Pure Heads' },
                         { key: 'Profil Terpénique', value: 'Heavy Gas & Sweet Candy' },
                         { key: 'Texture', value: 'Glassy Full Melt' },
-                        { key: 'Origine', value: 'Perk Vibes Farmz' },
+                        { key: 'Origine', value: 'TRICHOME MONTANE' },
                       ]);
-                      if (!prodFormName) setProdFormName('Gelato 33 x Wedding Cake 2x Static');
+                      if (!prodFormName) setProdFormName('Gelato 33 2x Static');
                       hapticFeedback('medium');
                     }}
                     className="p-2 rounded-xl bg-purple-950/40 border border-purple-500/30 hover:bg-purple-900/40 text-purple-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
                   >
-                    <span>⚡ 2x STATIC</span>
+                    <span>⚡ 2X STATIC</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
-                      const cat = categories.find((c) => c.name.toLowerCase().includes('frozen')) || categories[0];
+                      const cat = categories.find((c) => c.name.toUpperCase().includes('WPFF')) || categories[0];
                       if (cat) setProdFormCategory(cat.id);
                       setProdFormDetails([
-                        { key: 'Filtration', value: '73u - 90u Cryogénique' },
-                        { key: 'Profil Terpénique', value: 'Fresh Frozen Terps Fruité' },
-                        { key: 'Texture', value: 'Cold Cure Bader' },
-                        { key: 'Origine', value: 'Perk Vibes Farmz' },
+                        { key: 'Filtration', value: 'Fresh Frozen Live Rosin 90u-120u' },
+                        { key: 'Profil Terpénique', value: 'Fresh Terps & Fruits Exotiques' },
+                        { key: 'Texture', value: 'Cold Cure Jam' },
+                        { key: 'Origine', value: 'TRICHOME MONTANE' },
                       ]);
-                      if (!prodFormName) setProdFormName('Papaya Tangie Fresh Frozen 90u');
+                      if (!prodFormName) setProdFormName('Papaya Fresh Frozen WPFF');
                       hapticFeedback('medium');
                     }}
-                    className="p-2 rounded-xl bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/40 text-cyan-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
+                    className="p-2 rounded-xl bg-pink-950/40 border border-pink-500/30 hover:bg-pink-900/40 text-pink-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
                   >
-                    <span>❄️ FROZEN SIFT</span>
+                    <span>💧 WPFF</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
-                      const cat = categories.find((c) => c.name.toLowerCase().includes('dry')) || categories[0];
+                      const cat = categories.find((c) => c.name.toUpperCase().includes('DRY')) || categories[0];
                       if (cat) setProdFormCategory(cat.id);
                       setProdFormDetails([
                         { key: 'Filtration', value: '90u - 120u Traditionnel' },
                         { key: 'Profil Terpénique', value: 'Terreux & Épicé / Piquant' },
                         { key: 'Texture', value: 'Sable Doré affiné' },
-                        { key: 'Origine', value: 'Perk Vibes Farmz' },
+                        { key: 'Origine', value: 'TRICHOME MONTANE' },
                       ]);
-                      if (!prodFormName) setProdFormName('Kosher Kush 120u Dry Sift');
+                      if (!prodFormName) setProdFormName('Kosher Kush Dry Sift 120u');
                       hapticFeedback('medium');
                     }}
                     className="p-2 rounded-xl bg-amber-950/40 border border-amber-500/30 hover:bg-amber-900/40 text-amber-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
                   >
                     <span>🌾 DRY SIFT</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cat = categories.find((c) => c.name.toUpperCase().includes('FROZEN')) || categories[0];
+                      if (cat) setProdFormCategory(cat.id);
+                      setProdFormDetails([
+                        { key: 'Filtration', value: '73u - 90u Cryogénique' },
+                        { key: 'Profil Terpénique', value: 'Fresh Frozen Terps Fruité' },
+                        { key: 'Texture', value: 'Cold Cure Bader' },
+                        { key: 'Origine', value: 'TRICHOME MONTANE' },
+                      ]);
+                      if (!prodFormName) setProdFormName('Tangie Papaya Frozen Sift 90u');
+                      hapticFeedback('medium');
+                    }}
+                    className="p-2 rounded-xl bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/40 text-cyan-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
+                  >
+                    <span>❄️ FROZEN SIFT</span>
                   </button>
                 </div>
               </div>
@@ -1297,7 +1472,10 @@ export const AdminDashboardPage: React.FC = () => {
                   <input
                     type="text"
                     value={prodFormName}
-                    onChange={(e) => setProdFormName(e.target.value)}
+                    onChange={(e) => {
+                      setProdFormName(e.target.value);
+                      if (formError) setFormError(null);
+                    }}
                     placeholder="Ex: Wedding Cake x Gelato 33 2x Static ou Tangie Papaya 90u"
                     required
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs"
@@ -1311,12 +1489,19 @@ export const AdminDashboardPage: React.FC = () => {
                   <select
                     value={prodFormCategory}
                     onChange={(e) => setProdFormCategory(e.target.value)}
-                    required
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs"
                   >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
+                    {categories.length === 0 ? (
+                      <>
+                        <option value="cat_dry">DRY SIFT</option>
+                        <option value="cat_frozen">FROZEN SIFT</option>
+                        <option value="cat_static">2X STATIC</option>
+                      </>
+                    ) : (
+                      categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))
+                    )}
                   </select>
                 </div>
 
@@ -1447,10 +1632,14 @@ export const AdminDashboardPage: React.FC = () => {
                   />
                   <label
                     htmlFor="product-photo-upload"
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl cursor-pointer font-medium transition"
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl cursor-pointer font-medium text-xs transition active:scale-95 ${
+                      isUploadingImage
+                        ? 'bg-zinc-800 text-emerald-400 cursor-wait'
+                        : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+                    }`}
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{isUploadingImage ? `Téléversement (${uploadProgress}%)...` : 'Ajouter des photos'}</span>
+                    <span>{isUploadingImage ? `Traitement (${uploadProgress}%)...` : 'Ajouter des photos'}</span>
                   </label>
 
                   <div className="flex-1 flex gap-1.5">
@@ -1464,12 +1653,61 @@ export const AdminDashboardPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleAddManualUrl}
-                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl font-medium"
+                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl font-medium text-xs"
                     >
                       Ajouter
                     </button>
                   </div>
                 </div>
+
+                {/* Progress bar during photo processing */}
+                {isUploadingImage && (
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 space-y-1.5 animate-pulse">
+                    <div className="flex justify-between text-[11px] font-mono text-zinc-400">
+                      <span>Optimisation HD & enregistrement des photos...</span>
+                      <span className="text-emerald-400 font-bold">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-300 rounded-full"
+                        style={{ width: `${Math.max(15, uploadProgress)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Storage Configuration Notice / Fallback if Storage not activated yet */}
+                {storageErrorDetails && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 space-y-2 text-xs text-amber-200">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>Firebase Storage à activer dans votre console</span>
+                    </div>
+                    <p className="text-zinc-300 text-[11px] leading-relaxed">
+                      {storageErrorDetails}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <a
+                        href="https://console.firebase.google.com/project/gen-lang-client-0263232160/storage"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-lg text-xs transition"
+                      >
+                        <span>Ouvrir Console Firebase Storage</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      {pendingFiles.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleSavePendingFilesAsHD}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg text-xs border border-zinc-700"
+                        >
+                          <span>Enregistrer ma photo locale HD</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Images Preview Grid */}
                 {prodFormImages.length > 0 ? (
@@ -1511,6 +1749,135 @@ export const AdminDashboardPage: React.FC = () => {
                 ) : (
                   <div className="py-6 text-center text-zinc-500 font-mono border border-dashed border-zinc-800 rounded-2xl">
                     Aucune photo ajoutée. Veuillez ajouter au moins une photo.
+                  </div>
+                )}
+              </div>
+
+              {/* Video du Produit (Batch / Live Rosin / Vidéo d'extraction) */}
+              <div className="space-y-3 pt-3 border-t border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Video className="w-4 h-4 text-emerald-400" />
+                    <label className="font-mono uppercase font-bold text-white text-[11px]">
+                      Vidéo du Batch / Résine
+                    </label>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                    Sauvegarde Firebase Storage
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-zinc-400">
+                  Ajoutez une vidéo de haute qualité directement depuis votre appareil (caméra ou galerie). La vidéo sera hébergée sur Firebase Storage.
+                </p>
+
+                {/* Upload Action */}
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm,video/*"
+                    onChange={(e) => handleVideoUpload(e.target.files)}
+                    disabled={isUploadingVideo}
+                    className="hidden"
+                    id="product-video-upload"
+                  />
+                  <label
+                    htmlFor="product-video-upload"
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer font-bold text-xs transition active:scale-95 ${
+                      isUploadingVideo 
+                        ? 'bg-zinc-800 text-zinc-400 cursor-not-allowed' 
+                        : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>
+                      {isUploadingVideo 
+                        ? `Téléversement Firebase (${videoUploadProgress}%)...` 
+                        : '🎥 Ajouter une vidéo depuis mon appareil'}
+                    </span>
+                  </label>
+
+                  <div className="flex-1 flex gap-1.5">
+                    <input
+                      type="url"
+                      value={manualVideoUrl}
+                      onChange={(e) => setManualVideoUrl(e.target.value)}
+                      placeholder="Ou coller URL vidéo Firebase..."
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-zinc-500 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (manualVideoUrl.trim()) {
+                          setProdFormVideoUrl(manualVideoUrl.trim());
+                          setManualVideoUrl('');
+                          showNotice('Lien vidéo ajouté');
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl font-medium"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                </div>
+
+                {/* Progress Bar during upload */}
+                {isUploadingVideo && (
+                  <div className="space-y-1 bg-zinc-900/90 p-3 rounded-xl border border-zinc-800">
+                    <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+                      <span>Téléversement vers Firebase Storage en cours...</span>
+                      <span className="text-emerald-400 font-bold">{videoUploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-200"
+                        style={{ width: `${videoUploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Video Preview Player */}
+                {prodFormVideoUrl ? (
+                  <div className="space-y-2 p-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 flex items-center gap-1">
+                        <Play className="w-3 h-3 text-emerald-400" />
+                        Aperçu de la vidéo configurée :
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProdFormVideoUrl('');
+                          hapticFeedback('medium');
+                          showNotice('Vidéo retirée du produit');
+                        }}
+                        className="flex items-center gap-1 text-[10px] font-mono text-rose-400 hover:text-rose-300 transition"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Supprimer la vidéo</span>
+                      </button>
+                    </div>
+
+                    <div className="relative rounded-xl overflow-hidden bg-black aspect-video max-h-52 border border-zinc-800 flex items-center justify-center">
+                      <video
+                        src={prodFormVideoUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500 truncate pt-1">
+                      <span className="text-zinc-400 shrink-0">Lien :</span>
+                      <span className="truncate text-zinc-300 select-all">{prodFormVideoUrl}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-4 px-3 text-center text-zinc-500 font-mono text-[11px] border border-dashed border-zinc-800 rounded-xl bg-zinc-900/30">
+                    Aucune vidéo associée à ce produit pour le moment.
                   </div>
                 )}
               </div>
@@ -1564,20 +1931,41 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="pt-4 border-t border-zinc-800 flex justify-end gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white font-medium"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 font-bold uppercase tracking-wider shadow-lg"
-                >
-                  {editingProduct ? 'Enregistrer les modifications' : 'Créer le produit'}
-                </button>
+              <div className="pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                {formError ? (
+                  <div className="text-[11px] text-rose-400 font-medium flex items-center gap-1.5 self-start sm:self-center">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-zinc-500 font-mono hidden sm:block">
+                    {isUploadingImage ? 'Photos en cours d\'optimisation...' : 'Catalogue officiel TRICHOME MONTANE'}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsProductModalOpen(false)}
+                    disabled={isSavingProduct}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white font-medium disabled:opacity-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingProduct || isUploadingImage}
+                    className="px-6 py-2.5 rounded-xl bg-amber-400 text-zinc-950 hover:bg-amber-300 font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition active:scale-95 cursor-pointer"
+                  >
+                    {isSavingProduct ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                        <span>Publication en cours...</span>
+                      </>
+                    ) : (
+                      <span>{editingProduct ? 'Enregistrer les modifications' : 'Publier le produit'}</span>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

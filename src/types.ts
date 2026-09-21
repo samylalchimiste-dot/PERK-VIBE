@@ -1,5 +1,5 @@
 // ==========================================
-// CATALOGUE & MENU TYPES (PERK VIBES FARMZ)
+// CATALOGUE & MENU TYPES (TRICHOME MONTANE)
 // ==========================================
 
 export type ProductStockStatus = 'AVAILABLE' | 'LOW_STOCK' | 'SOLD_OUT';
@@ -23,6 +23,8 @@ export interface Product {
   categoryName?: string;
   images: string[];
   mainImage: string;
+  videoUrl?: string;
+  videos?: string[];
   stock: ProductStockStatus;
   status: ProductPublishStatus;
   featured: boolean;

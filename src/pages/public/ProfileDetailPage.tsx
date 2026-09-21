@@ -99,7 +99,7 @@ export const ProfileDetailPage: React.FC = () => {
     hapticFeedback('light');
     if (navigator.share && profile) {
       navigator.share({
-        title: `${profile.name} — PERK VIBES FARMZ`,
+        title: `${profile.name} — TRICHOME MONTANE`,
         text: profile.description,
         url: window.location.href,
       }).catch(() => {});
@@ -129,8 +129,8 @@ export const ProfileDetailPage: React.FC = () => {
       <div className="min-h-screen bg-[#070414] text-slate-100 flex flex-col">
         <Header showBack onBack={() => navigate('/')} />
         <div className="flex-1 flex flex-col items-center justify-center py-24 text-purple-300">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
-          <p className="text-xs font-medium">Chargement de la sélection PERK VIBES FARMZ...</p>
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-xs font-medium">Chargement de la sélection TRICHOME MONTANE...</p>
         </div>
       </div>
     );
@@ -146,7 +146,7 @@ export const ProfileDetailPage: React.FC = () => {
           </div>
           <h2 className="text-lg font-bold text-white">Boutique non trouvée</h2>
           <p className="text-xs text-purple-300/80 leading-relaxed">
-            Cette boutique est introuvable ou n'a pas encore été validée et publiée par l'équipe PERK VIBES FARMZ.
+            Cette boutique est introuvable ou n'a pas encore été validée et publiée par l'équipe TRICHOME MONTANE.
           </p>
           <Link
             to="/"
@@ -401,7 +401,7 @@ export const ProfileDetailPage: React.FC = () => {
             </button>
           </div>
           <div className="text-[11px] text-purple-300/75 text-center -mt-1">
-            🔥 Plus une boutique reçoit de votes ❤️, plus elle monte en 1ère position dans le classement PERK VIBES FARMZ !
+            🔥 Plus une boutique reçoit de votes ❤️, plus elle monte en 1ère position dans le classement TRICHOME MONTANE !
           </div>
 
           {/* Description */}

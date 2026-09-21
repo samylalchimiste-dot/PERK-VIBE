@@ -14,7 +14,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from './config';
+import { db, storage, app } from './config';
 import { Product, Category, BrandSettings, ProductStockStatus, ProductPublishStatus } from '../../types';
 import { TELEGRAM_BOT_CONFIG } from '../telegram/telegramBotConfig';
 
@@ -23,22 +23,22 @@ export const CATEGORIES_COLLECTION = 'categories';
 export const SETTINGS_COLLECTION = 'brandSettings';
 export const BRAND_SETTINGS_DOC_ID = 'main';
 
-// Default PERK VIBES FARMZ Brand Settings
+// Default TRICHOME MONTANE Brand Settings
 export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
-  brandName: 'PERK VIBES FARMZ',
+  brandName: 'TRICHOME MONTANE',
   tagline: 'Connoisseur Farm & Top-Shelf Extractions',
   description: 'Sélection exclusive de filtrations d\'exception : Dry Sift de précision, Frozen Sift cryogénique et 2x Static 99% trichome heads.',
-  profileImage: 'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=400&q=80',
-  coverImage: 'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1600&q=80',
+  profileImage: '',
+  coverImage: '',
   currency: '€',
   heroCtaText: 'Explorer le Menu',
-  badgeText: 'Drop Exclusif 2026',
+  badgeText: 'Collection 2026',
   contactLinks: {
     telegram: 'https://t.me/F2nOfficiel_Bot',
     botUsername: TELEGRAM_BOT_CONFIG.botUsername || 'F2nOfficiel_Bot',
     botUrl: TELEGRAM_BOT_CONFIG.botUrl || 'https://t.me/F2nOfficiel_Bot',
     whatsapp: '',
-    instagram: '@perkvibesfarmz',
+    instagram: '@trichomemontane',
     channel: 'https://t.me/F2nOfficiel_Bot',
   },
 };
@@ -54,8 +54,8 @@ export function subscribeBrandSettings(callback: (settings: BrandSettings) => vo
     (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as BrandSettings;
-        // If the stored name is still the old one, merge with PERK VIBES FARMZ
-        const isOldName = !data.brandName || data.brandName === 'F2N' || data.brandName === 'F2N PARIS';
+        // If the stored name is still an old one, merge with TRICHOME MONTANE
+        const isOldName = !data.brandName || data.brandName === 'F2N' || data.brandName === 'F2N PARIS' || data.brandName === 'PERK VIBES FARMZ';
         callback({
           ...DEFAULT_BRAND_SETTINGS,
           ...data,
@@ -237,22 +237,38 @@ export async function getProduct(id: string): Promise<Product | null> {
   }
 }
 
+// Clean helper to remove any undefined fields before sending to Firestore
+export function cleanFirestoreData<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      clean[key] = cleanFirestoreData(value);
+    } else {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
 export async function createProduct(prod: Omit<Product, 'id'>): Promise<string> {
   const colRef = collection(db, PRODUCTS_COLLECTION);
-  const docRef = await addDoc(colRef, {
+  const data = cleanFirestoreData({
     ...prod,
-    createdAt: Date.now(),
+    createdAt: prod.createdAt || Date.now(),
     updatedAt: Date.now(),
   });
+  const docRef = await addDoc(colRef, data);
   return docRef.id;
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<void> {
   const docRef = doc(db, PRODUCTS_COLLECTION, id);
-  await updateDoc(docRef, {
+  const data = cleanFirestoreData({
     ...updates,
     updatedAt: Date.now(),
   });
+  await updateDoc(docRef, data);
 }
 
 export async function deleteProduct(id: string): Promise<void> {
@@ -275,56 +291,162 @@ export async function deleteAllProducts(): Promise<number> {
 }
 
 // ==========================================
-// IMAGE UPLOADER
+// MEDIA UPLOADER (PHOTOS & VIDEOS TO FIREBASE STORAGE)
 // ==========================================
 
-export async function uploadCatalogImage(
+/**
+ * Uploads an image or video file directly to Firebase Storage and returns
+ * the persistent Firebase HTTPS download URL (not a local blob or data URL).
+ */
+export async function uploadCatalogMedia(
   file: File,
   folder: string = 'catalog',
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  timeoutMs: number = 30000
 ): Promise<string> {
-  try {
-    const timestamp = Date.now();
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-    const storageRef = ref(storage, `${folder}/${timestamp}_${cleanFileName}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+  const timestamp = Date.now();
+  const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+  const path = `${folder}/${timestamp}_${cleanFileName}`;
+
+  // Set explicit content type so Firebase Storage serves it properly
+  const isVideo = file.type?.startsWith('video/') || /\.(mp4|mov|webm|avi|m4v)$/i.test(file.name);
+  const contentType = file.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+
+  const metadata = {
+    contentType,
+    customMetadata: {
+      originalName: file.name,
+      uploadedAt: new Date().toISOString(),
+    },
+  };
+
+  const executeUploadOnStorage = (storageInstance: any): Promise<string> => {
+    const storageRef = ref(storageInstance, path);
+    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
     return new Promise((resolve, reject) => {
+      let finished = false;
+      const timer = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          try {
+            uploadTask.cancel();
+          } catch {
+            // ignore
+          }
+          const timeoutErr: any = new Error('Délai d\'attente dépassé lors de l\'envoi vers Firebase Storage.');
+          timeoutErr.code = 'storage/timeout';
+          reject(timeoutErr);
+        }
+      }, timeoutMs);
+
       uploadTask.on(
         'state_changed',
         (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          if (onProgress) onProgress(Math.round(progress));
+          if (finished) return;
+          const total = snapshot.totalBytes || 1;
+          const progress = Math.min(100, Math.round((snapshot.bytesTransferred / total) * 100));
+          if (onProgress) onProgress(progress);
         },
-        (error) => {
-          console.warn('Firebase Storage upload failed, falling back to compressed DataURL:', error);
-          compressImageToDataURL(file).then(resolve).catch(reject);
+        (error: any) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          console.warn('Firebase Storage upload error:', error);
+          reject(error);
         },
         async () => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
           try {
             const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log('✅ Fichier sauvegardé sur Firebase Storage avec succès:', downloadUrl);
             resolve(downloadUrl);
-          } catch (e) {
-            compressImageToDataURL(file).then(resolve).catch(reject);
+          } catch (e: any) {
+            console.warn('Impossible de récupérer l\'URL de téléchargement Firebase:', e);
+            reject(e);
           }
         }
       );
     });
-  } catch (err) {
-    console.warn('Fallback direct compression due to storage error:', err);
-    return compressImageToDataURL(file);
+  };
+
+  try {
+    return await executeUploadOnStorage(storage);
+  } catch (err: any) {
+    // If bucket not found (404), try fallback appspot.com bucket
+    const is404 = err?.status_ === 404 || err?.code === 'storage/bucket-not-found' || (err?.code === 'storage/unknown' && err?.status_ === 404);
+    if (is404) {
+      try {
+        const fallbackStorage = (await import('firebase/storage')).getStorage(app, 'gen-lang-client-0263232160.appspot.com');
+        return await executeUploadOnStorage(fallbackStorage);
+      } catch (fallbackErr: any) {
+        console.warn('Fallback appspot.com bucket also not ready:', fallbackErr);
+      }
+    }
+
+    let friendlyMessage = err?.message || 'Erreur inconnue Firebase Storage';
+    if (is404) {
+      friendlyMessage = 'Firebase Storage n\'est pas encore activé sur votre console Firebase (Erreur 404 : Bucket introuvable). Rendez-vous sur console.firebase.google.com > Stockage / Storage et cliquez sur "Commencer".';
+    } else if (err?.code === 'storage/unauthorized') {
+      friendlyMessage = 'Accès refusé par les règles Firebase Storage. Activez les règles d\'écriture (storage.rules) sur Firebase Console.';
+    }
+
+    const enhancedErr: any = new Error(friendlyMessage);
+    enhancedErr.originalError = err;
+    enhancedErr.isStorageNotActivated = is404;
+    enhancedErr.code = err?.code || 'storage/error';
+    throw enhancedErr;
   }
 }
 
-export async function compressImageToDataURL(file: File): Promise<string> {
+export async function uploadCatalogImage(
+  file: File,
+  folderOrProgress?: string | ((progress: number) => void),
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const folder = typeof folderOrProgress === 'string' ? folderOrProgress : 'catalog/images';
+  const progressCb = typeof folderOrProgress === 'function' ? folderOrProgress : onProgress;
+
+  if (progressCb) progressCb(25);
+
+  // 1. Immediately create optimized lightweight local Data URL (~30KB-50KB, fits in Firestore easily)
+  const localHdDataUrl = await compressImageToDataURL(file, 720, 0.68);
+  if (progressCb) progressCb(60);
+
+  // 2. Attempt Firebase Storage with a FAST 1.5-second timeout
+  try {
+    const storageUrl = await uploadCatalogMedia(file, folder, progressCb, 1500);
+    if (progressCb) progressCb(100);
+    return storageUrl;
+  } catch (storageErr) {
+    // If Firebase Storage is unavailable or timed out, smoothly fallback to lightweight data URL
+    if (progressCb) progressCb(100);
+    return localHdDataUrl;
+  }
+}
+
+export async function uploadCatalogVideo(
+  file: File,
+  folderOrProgress?: string | ((progress: number) => void),
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const folder = typeof folderOrProgress === 'string' ? folderOrProgress : 'catalog/videos';
+  const progressCb = typeof folderOrProgress === 'function' ? folderOrProgress : onProgress;
+  if (progressCb) progressCb(15);
+  return uploadCatalogMedia(file, folder, progressCb, 4000);
+}
+
+export async function compressImageToDataURL(file: File, maxWidth: number = 720, quality: number = 0.68): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
+        const MAX_WIDTH = maxWidth;
+        const MAX_HEIGHT = maxWidth;
         let width = img.width;
         let height = img.height;
 
@@ -340,16 +462,16 @@ export async function compressImageToDataURL(file: File): Promise<string> {
           }
         }
 
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           resolve(e.target?.result as string);
           return;
         }
 
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
         resolve(compressed);
       };
       img.onerror = () => resolve(e.target?.result as string);
@@ -415,369 +537,117 @@ export async function purgeAllProductsAndCategories(): Promise<{ deletedProds: n
   return { deletedProds, deletedCats };
 }
 
+export const CANONICAL_CATEGORIES = [
+  { name: '2X STATIC', slug: '2x-static', order: 1, description: 'Double purification électrostatique ultra pure' },
+  { name: 'WPFF', slug: 'wpff', order: 2, description: 'Whole Plant Fresh Frozen Live Rosin' },
+  { name: 'DRY SIFT', slug: 'dry-sift', order: 3, description: 'Dry Sift traditionnel de précision & tamisage fin' },
+  { name: 'FROZEN SIFT', slug: 'frozen-sift', order: 4, description: 'Frozen Sift extractions cryogéniques' },
+];
+
+export function normalizeCategoryName(raw: string): string | null {
+  const upper = raw.toUpperCase().trim();
+  if (upper.includes('STATIC') || upper === '2X STATIC') return '2X STATIC';
+  if (upper.includes('WPFF') || upper.includes('WPPF')) return 'WPFF';
+  if (upper.includes('DRY SIFT') || upper === 'DRY') return 'DRY SIFT';
+  if (upper.includes('FROZEN SIFT') || upper === 'FROZEN') return 'FROZEN SIFT';
+  return null;
+}
+
+/**
+ * Ensures ONLY the 4 canonical categories (2X STATIC, WPFF, DRY SIFT, FROZEN SIFT) exist without duplicates.
+ * Removes old "Dry", "Frozen", clothing or other obsolete categories.
+ */
+export async function ensureCanonicalCategories(): Promise<void> {
+  try {
+    const colCategories = collection(db, CATEGORIES_COLLECTION);
+    const catsSnap = await getDocs(colCategories);
+
+    const existingByName = new Map<string, string>();
+    const toDelete: string[] = [];
+
+    catsSnap.forEach((docSnap) => {
+      const data = docSnap.data() as Category;
+      const rawName = (data.name || '').trim();
+      const norm = normalizeCategoryName(rawName);
+
+      // If it doesn't match the 4 canonical names, or is already present, delete it
+      if (!norm) {
+        toDelete.push(docSnap.id);
+        return;
+      }
+
+      if (existingByName.has(norm)) {
+        toDelete.push(docSnap.id);
+      } else {
+        existingByName.set(norm, docSnap.id);
+        // If the document has an old name like 'Dry' or 'Frozen', update it to the exact canonical name
+        if (data.name !== norm) {
+          updateDoc(doc(db, CATEGORIES_COLLECTION, docSnap.id), {
+            name: norm,
+            updatedAt: serverTimestamp(),
+          }).catch(console.warn);
+        }
+      }
+    });
+
+    for (const id of toDelete) {
+      await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
+    }
+
+    for (const cat of CANONICAL_CATEGORIES) {
+      if (!existingByName.has(cat.name)) {
+        await addDoc(colCategories, {
+          name: cat.name,
+          slug: cat.slug,
+          description: cat.description,
+          order: cat.order,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error ensuring canonical categories:', err);
+  }
+}
+
 export async function resetAndSeedPerkVibesFarmz(force: boolean = false): Promise<boolean> {
   try {
     const colProducts = collection(db, PRODUCTS_COLLECTION);
     const colCategories = collection(db, CATEGORIES_COLLECTION);
 
-    const prodsSnap = await getDocs(colProducts);
-    const catsSnap = await getDocs(colCategories);
+    // Ensure categories are clean
+    await ensureCanonicalCategories();
 
-    // Check if any old clothing product or old category exists
-    let hasOldClothing = false;
-    prodsSnap.forEach((d) => {
-      const p = d.data() as Product;
-      const combined = `${p.name} ${p.categoryName || ''} ${p.description || ''}`.toLowerCase();
-      if (OLD_CLOTHING_KEYWORDS.some((kw) => combined.includes(kw))) {
-        hasOldClothing = true;
-      }
-    });
-
-    catsSnap.forEach((d) => {
-      const c = d.data() as Category;
-      const name = (c.name || '').toLowerCase();
-      if (name.includes('prêt') || name.includes('accessoires') || name.includes('sneakers') || name.includes('limité')) {
-        hasOldClothing = true;
-      }
-    });
-
-    const isMissingCategories = catsSnap.size < 3;
-    const isEmpty = prodsSnap.empty;
-
-    if (!force && !hasOldClothing && !isEmpty && !isMissingCategories) {
-      // Already running clean PERK VIBES FARMZ catalog
-      return false;
+    // If force or first load, purge all products so catalog is completely empty
+    if (force) {
+      await deleteAllProducts();
     }
 
-    console.log('🔄 Cleaning old products/categories and seeding PERK VIBES FARMZ catalog...');
-
-    // 1. Delete old products if clothing detected or force
-    if (hasOldClothing || force) {
-      for (const prodDoc of prodsSnap.docs) {
-        await deleteDoc(doc(db, PRODUCTS_COLLECTION, prodDoc.id));
-      }
-      for (const catDoc of catsSnap.docs) {
-        await deleteDoc(doc(db, CATEGORIES_COLLECTION, catDoc.id));
-      }
-    }
-
-    // 2. Insert the 3 EXACT Categories requested: DRY SIFT, FROZEN SIFT, 2x STATIC
-    const categoriesData: Array<Omit<Category, 'id'>> = [
-      {
-        name: 'DRY SIFT',
-        slug: 'dry-sift',
-        description: 'Tamisage mécanique de précision, trichomes dorés et profil terpénique brut ultra parfumé.',
-        image: 'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=800&q=80',
-        order: 1,
-      },
-      {
-        name: 'FROZEN SIFT',
-        slug: 'frozen-sift',
-        description: 'Extraction à froid cryogénique sur biomasse fraîche, texture bader crémeuse et terpènes vivants.',
-        image: 'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=800&q=80',
-        order: 2,
-      },
-      {
-        name: '2x STATIC',
-        slug: '2x-static',
-        description: 'Double purification statique isolant 99% de têtes glandulaires sans matière végétale. Pureté absolue.',
-        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-        order: 3,
-      },
-    ];
-
-    const categoryIds: Record<string, string> = {};
-    for (const cat of categoriesData) {
-      const docRef = await addDoc(collection(db, CATEGORIES_COLLECTION), {
-        ...cat,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      categoryIds[cat.name] = docRef.id;
-    }
-
-    // 3. Insert PERK VIBES FARMZ Products for DRY SIFT, FROZEN SIFT, 2x STATIC
-    const productsData: Array<Omit<Product, 'id'>> = [
-      // --- DRY SIFT ---
-      {
-        name: 'Tangie Papaya 120u / 73u',
-        description: 'Dry sift de précision issu de la récolte 2026 Perk Vibes Farmz. Tamisage soigné révélant un sable doré fondant à température ambiante. Explosion aromatique de zestes d\'oranges douces, mangue et papaye mûre.',
-        price: 50,
-        currency: '€',
-        categoryId: categoryIds['DRY SIFT'] || '',
-        categoryName: 'DRY SIFT',
-        images: [
-          'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-        stock: 'AVAILABLE',
-        status: 'published',
-        featured: true,
-        isNew: true,
-        order: 1,
-        sku: 'PVF-DS-001',
-        details: {
-          'Filtration': 'Tamisage mécanique 120u - 73u',
-          'Profil Terpénique': 'Agrumes doux, papaye mûre & gaz subtil',
-          'Texture': 'Sable doré crémeux à température ambiante',
-          'Origine': 'Perk Vibes Farmz - Batch #26A',
-          'Conservation': 'Conserver au frais (8°C - 12°C)',
-        },
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      },
-      {
-        name: 'Forbidden Zkittlez 105u Ultra Clean',
-        description: 'Sélection pure souche terpénique. Tamisage fin 105 microns sans débris végétal. Profil de bonbon tropical acidulé avec un arrière-goût de fruits de la passion et de diesel délicat.',
-        price: 45,
-        currency: '€',
-        categoryId: categoryIds['DRY SIFT'] || '',
-        categoryName: 'DRY SIFT',
-        images: [
-          'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-        stock: 'AVAILABLE',
-        status: 'published',
-        featured: false,
-        isNew: true,
-        order: 2,
-        sku: 'PVF-DS-002',
-        details: {
-          'Filtration': '105u Sélectif',
-          'Profil Terpénique': 'Fruits rouges acidulés, bonbon tropical',
-          'Texture': 'Semi-cured, terpène ring naturel au doigt',
-          'Origine': 'Perk Vibes Farmz - Batch #26B',
-          'Conservation': 'Lieu sec et tempéré',
-        },
-        createdAt: Date.now() - 5000,
-        updatedAt: Date.now() - 5000,
-      },
-      {
-        name: 'Biscotti Mintz Cold Cure 90u',
-        description: 'Dry sift maturé à basse température pendant 21 jours. Texture résineuse crémeuse et onctueuse. Notes lourdes de biscuit vanillé, menthe fraîche poivrée et fond de café chocolaté.',
-        price: 55,
-        currency: '€',
-        categoryId: categoryIds['DRY SIFT'] || '',
-        categoryName: 'DRY SIFT',
-        images: [
-          'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1000&q=80',
-        stock: 'LOW_STOCK',
-        status: 'published',
-        featured: true,
-        isNew: false,
-        order: 3,
-        sku: 'PVF-DS-003',
-        details: {
-          'Filtration': '90u Single Source',
-          'Profil Terpénique': 'Pâtisserie vanillée, menthe poivrée, diesel',
-          'Texture': 'Cold cure crémeux suintant',
-          'Origine': 'Perk Vibes Farmz - Batch #25Z',
-          'Conservation': 'Frigo conseillé (4°C - 8°C)',
-        },
-        createdAt: Date.now() - 10000,
-        updatedAt: Date.now() - 10000,
-      },
-
-      // --- FROZEN SIFT ---
-      {
-        name: 'Melonade Sherbet Fresh Cut Cryo',
-        description: 'Frozen sift élaboré à partir de fleurs congelées à -40°C dès la récolte. Préserve l\'intégralité des monoterpènes volatils. Parfum vibrant de melon d\'Espagne mûr et de sorbet citron crémeux.',
-        price: 75,
-        currency: '€',
-        categoryId: categoryIds['FROZEN SIFT'] || '',
-        categoryName: 'FROZEN SIFT',
-        images: [
-          'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-        stock: 'AVAILABLE',
-        status: 'published',
-        featured: true,
-        isNew: true,
-        order: 4,
-        sku: 'PVF-FS-001',
-        details: {
-          'Process': 'Fresh Frozen -40°C sous atmosphère inerte',
-          'Microns': '90u - 120u Live Heads',
-          'Profil Terpénique': 'Melon givré, zeste de citron, pâte sucrée',
-          'Texture': 'Bader ultra brillant et onctueux',
-          'Conservation': 'Obligatoire au frais (4°C)',
-        },
-        createdAt: Date.now() - 15000,
-        updatedAt: Date.now() - 15000,
-      },
-      {
-        name: 'GMO x Trop Cookies Live Bader',
-        description: 'Un crossover surpuissant associant le funk terreux aillé de la GMO à la fraîcheur d\'agrumes de la Trop Cookies. Séparation cryogénique assurant une pureté maximale des têtes de résine.',
-        price: 80,
-        currency: '€',
-        categoryId: categoryIds['FROZEN SIFT'] || '',
-        categoryName: 'FROZEN SIFT',
-        images: [
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-        stock: 'AVAILABLE',
-        status: 'published',
-        featured: false,
-        isNew: true,
-        order: 5,
-        sku: 'PVF-FS-002',
-        details: {
-          'Process': '100% Fresh Frozen Single Farm',
-          'Microns': '73u Full Spectrum',
-          'Profil Terpénique': 'Ail musqué, clémentine pressée, funk intense',
-          'Texture': 'Sauce terpénique & micro-cristaux',
-          'Conservation': 'Frigo (4°C - 8°C)',
-        },
-        createdAt: Date.now() - 20000,
-        updatedAt: Date.now() - 20000,
-      },
-      {
-        name: 'Peach Ozz 90u First Wash Jam',
-        description: 'Premier passage cryogénique exclusif. Affiné en warm cure sous pression pour libérer une nappe terpénique translucide. Arôme inimitable de bonbon à la pêche et thé glacé floral.',
-        price: 85,
-        currency: '€',
-        categoryId: categoryIds['FROZEN SIFT'] || '',
-        categoryName: 'FROZEN SIFT',
-        images: [
-          'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-        stock: 'LOW_STOCK',
-        status: 'published',
-        featured: true,
-        isNew: false,
-        order: 6,
-        sku: 'PVF-FS-003',
-        details: {
-          'Process': 'Cryo Sift First Wash & Warm Jam Curing',
-          'Microns': '90u Strictly Isolated',
-          'Profil Terpénique': 'Pêche blanche sucrée, fleur d\'oranger',
-          'Texture': 'Jam limpide et ultra parfumé',
-          'Conservation': 'Frigo (4°C - 8°C)',
-        },
-        createdAt: Date.now() - 25000,
-        updatedAt: Date.now() - 25000,
-      },
-
-      // --- 2x STATIC ---
-      {
-        name: 'Wedding Cake x Gelato 33 2x Static 99%',
-        description: 'Le summum de la purification statique. Double passage sous champ électrostatique de précision éliminant 99% des résidus foliaires. Têtes de trichomes translucides fondant instantanément en bulles dorées sans résidu.',
-        price: 90,
-        currency: '€',
-        categoryId: categoryIds['2x STATIC'] || '',
-        categoryName: '2x STATIC',
-        images: [
-          'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-        stock: 'AVAILABLE',
-        status: 'published',
-        featured: true,
-        isNew: true,
-        order: 7,
-        sku: 'PVF-ST-001',
-        details: {
-          'Technologie': 'Double isolation statique 2x de précision',
-          'Pureté': '99% têtes glandulaires isolées',
-          'Melt': 'Full Melt 6 étoiles instantané',
-          'Profil Terpénique': 'Gâteau vanillé onctueux, gelato crémeux gazeux',
-          'Origine': 'Perk Vibes Farmz Reserve',
-        },
-        createdAt: Date.now() - 30000,
-        updatedAt: Date.now() - 30000,
-      },
-      {
-        name: 'Zkittlez 2x Static Terp Clean',
-        description: 'Double purification statique sur génétique Zkittlez originale. Une pureté organoleptique absolue : chaque bouffée restitue le profil du fruit frais sans la moindre amertume végétale.',
-        price: 95,
-        currency: '€',
-        categoryId: categoryIds['2x STATIC'] || '',
-        categoryName: '2x STATIC',
-        images: [
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1568644396922-5c3bfae12521?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-        stock: 'AVAILABLE',
-        status: 'published',
-        featured: true,
-        isNew: true,
-        order: 8,
-        sku: 'PVF-ST-002',
-        details: {
-          'Technologie': 'Double passage électrostatique cryo',
-          'Pureté': 'Têtes de trichomes translucides purifiées',
-          'Melt': 'Bulle à la moindre flamme douce',
-          'Profil Terpénique': 'Arc-en-ciel de fruits tropicaux et bonbon fruité',
-          'Origine': 'Perk Vibes Farmz',
-        },
-        createdAt: Date.now() - 35000,
-        updatedAt: Date.now() - 35000,
-      },
-      {
-        name: 'RS11 (Rainbow Sherbert #11) 2x Static Reserve',
-        description: 'Édition confidentielle 2x Static. La quintessence de la RS11 avec un profil terpénique de sherbert gazeux et notes de pinède citronnée. Très recherché par les passionnés.',
-        price: 100,
-        currency: '€',
-        categoryId: categoryIds['2x STATIC'] || '',
-        categoryName: '2x STATIC',
-        images: [
-          'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1603909223429-69bb7101f420?auto=format&fit=crop&w=1000&q=80',
-        ],
-        mainImage: 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1000&q=80',
-        stock: 'SOLD_OUT',
-        status: 'published',
-        featured: false,
-        isNew: false,
-        order: 9,
-        sku: 'PVF-ST-003',
-        details: {
-          'Technologie': 'Double statique ultra select 2x',
-          'Pureté': '99.5% têtes de résine pures',
-          'Melt': 'Full Melt zéro résidu',
-          'Profil Terpénique': 'Sherbert gazeux, agrumes exotiques, pinède',
-          'Origine': 'Perk Vibes Farmz - Réserve privée',
-        },
-        createdAt: Date.now() - 40000,
-        updatedAt: Date.now() - 40000,
-      },
-    ];
-
-    for (const prod of productsData) {
-      await addDoc(colProducts, {
-        ...prod,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    }
-
-    // 4. Update Brand Settings to PERK VIBES FARMZ
     await setDoc(doc(db, SETTINGS_COLLECTION, BRAND_SETTINGS_DOC_ID), DEFAULT_BRAND_SETTINGS, { merge: true });
-
-    console.log('✅ PERK VIBES FARMZ catalog successfully seeded with DRY SIFT, FROZEN SIFT and 2x STATIC!');
     return true;
   } catch (err) {
-    console.error('Error seeding PERK VIBES FARMZ catalog:', err);
+    console.error('Error resetAndSeedPerkVibesFarmz:', err);
     return false;
   }
 }
 
-// Backward compatibility alias
-export const seedCatalogIfEmpty = () => resetAndSeedPerkVibesFarmz(false);
+// Backward compatibility
+export const seedCatalogIfEmpty = () => ensureCanonicalCategories();
+
+/**
+ * One-time purge of demo products - safe guard: never executes if already executed,
+ * and only deletes mock/legacy demo clothing items, never touching newly added products
+ */
+export async function purgeAllMockProductsOnce(): Promise<void> {
+  const PURGED_KEY = 'pvf_mock_products_purged_final_v2';
+  if (typeof window !== 'undefined' && localStorage.getItem(PURGED_KEY)) return;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PURGED_KEY, 'true');
+    }
+  } catch (err) {
+    console.warn('Could not auto purge demo products:', err);
+  }
+}
+
