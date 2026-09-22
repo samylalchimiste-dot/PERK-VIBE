@@ -86,7 +86,7 @@ export const AdminLoginPage: React.FC = () => {
               </div>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Espace Administrateur TRICHOME MONTANE
+              Espace Administrateur Cartel Del Farmez
             </h1>
             <p className="text-xs text-purple-300">
               Accès réservé. Saisissez le mot de passe maître pour continuer.

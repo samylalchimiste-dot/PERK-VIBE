@@ -318,7 +318,7 @@ export const CartePage: React.FC = () => {
   // Custom marker icon creation with prominent yellow pins and city labels
   const createCustomIcon = (cityName: string, isSelected: boolean) => {
     return L.divIcon({
-      className: 'custom-trichome-morocco-marker',
+      className: 'custom-cdf-morocco-marker',
       html: `
         <div style="position: relative; width: ${isSelected ? 54 : 42}px; height: ${isSelected ? 64 : 52}px; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;">
           <!-- Pulsing Wave -->

@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
     }
   };
 
-  const brandName = brand?.brandName || 'TRICHOME MONTANE';
+  const brandName = brand?.brandName || 'Cartel Del Farmez';
 
   return (
     <>

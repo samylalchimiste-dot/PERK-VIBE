@@ -74,7 +74,7 @@ export const SecretAdminModal: React.FC<SecretAdminModalProps> = ({ isOpen, onCl
             </div>
           </div>
           <h3 className="font-black text-lg text-white tracking-tight">
-            Accès Administrateur TRICHOME MONTANE
+            Accès Administrateur Cartel Del Farmez
           </h3>
           <p className="text-xs text-purple-300/80">
             Saisissez le mot de passe maître pour déverrouiller l'espace d'administration.

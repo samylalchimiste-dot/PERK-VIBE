@@ -148,30 +148,30 @@ export const BrandCrestLogo: React.FC<BrandCrestLogoProps> = ({
           opacity="0.15"
         />
 
-        {/* Text TRICHOME MONTANE */}
+        {/* Text CARTEL DEL FARMEZ */}
         <text
           x="100"
           y="143"
           textAnchor="middle"
           fill="#ffffff"
-          fontSize="11"
+          fontSize="10"
           fontWeight="900"
           fontFamily="'Montserrat', 'Arial Black', sans-serif"
-          letterSpacing="1.2"
+          letterSpacing="1.5"
         >
-          TRICHOME
+          CARTEL DEL
         </text>
         <text
           x="100"
           y="155"
           textAnchor="middle"
           fill="#fef08a"
-          fontSize="9.5"
+          fontSize="11"
           fontWeight="900"
           fontFamily="'Montserrat', 'Arial Black', sans-serif"
-          letterSpacing="1.8"
+          letterSpacing="2.2"
         >
-          MONTANE
+          FARMEZ
         </text>
 
         {/* Small Bottom Star */}

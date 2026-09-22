@@ -53,7 +53,7 @@ export const BrandInfoPage: React.FC = () => {
               Connoisseur Farm & Top-Shelf Extractions
             </span>
             <h2 className="text-xl font-extrabold tracking-tight text-white uppercase mt-0.5" style={{ fontFamily: "'Bebas Neue', 'Montserrat', sans-serif" }}>
-              {brand.brandName || 'TRICHOME MONTANE'}
+              {brand.brandName || 'Cartel Del Farmez'}
             </h2>
             <p className="text-xs text-zinc-300 leading-relaxed max-w-sm mx-auto mt-2">
               {brand.description || 'Menu officiel dédié aux filtrations exclusives : Frozen, Dry, Static et WPFF.'}

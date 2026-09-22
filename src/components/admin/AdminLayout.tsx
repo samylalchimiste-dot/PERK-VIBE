@@ -21,7 +21,7 @@ export const AdminLayout: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center text-zinc-400">
         <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-3" />
-        <p className="text-xs font-mono">Vérification de la session administrateur TRICHOME MONTANE...</p>
+        <p className="text-xs font-mono">Vérification de la session administrateur Cartel Del Farmez...</p>
       </div>
     );
   }
@@ -43,11 +43,11 @@ export const AdminLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link to="/admin" className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-amber-400 text-zinc-950 flex items-center justify-center font-extrabold text-xs tracking-tighter shadow-md">
-                TM
+                CDF
               </div>
               <div>
                 <span className="font-extrabold text-xs sm:text-sm tracking-wider uppercase text-white block leading-none">
-                  TRICHOME MONTANE · Administration Menu
+                  Cartel Del Farmez · Administration Menu
                 </span>
                 <span className="text-[10px] text-zinc-400 font-mono">
                   Éditeur Menu & Extractions

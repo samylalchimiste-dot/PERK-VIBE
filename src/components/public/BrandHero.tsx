@@ -84,7 +84,7 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
                 />
               ) : (
                 <span className="font-extrabold text-2xl tracking-tighter text-amber-400">
-                  {brand.brandName || 'TRICHOME MONTANE'}
+                  {brand.brandName || 'Cartel Del Farmez'}
                 </span>
               )}
             </div>
@@ -98,7 +98,7 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
 
         {/* Brand Name */}
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white uppercase mb-1" style={{ fontFamily: "'Bebas Neue', 'Montserrat', sans-serif" }}>
-          {brand.brandName || 'TRICHOME MONTANE'}
+          {brand.brandName || 'Cartel Del Farmez'}
         </h1>
 
         {/* Tagline */}

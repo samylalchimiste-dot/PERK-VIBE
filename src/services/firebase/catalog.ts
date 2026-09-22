@@ -24,9 +24,9 @@ export const CATEGORIES_COLLECTION = 'categories';
 export const SETTINGS_COLLECTION = 'brandSettings';
 export const BRAND_SETTINGS_DOC_ID = 'main';
 
-// Default TRICHOME MONTANE Brand Settings
+// Default Cartel Del Farmez Brand Settings
 export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
-  brandName: 'TRICHOME MONTANE',
+  brandName: 'Cartel Del Farmez',
   tagline: 'Connoisseur Farm & Top-Shelf Extractions',
   description: 'Sélection exclusive de filtrations d\'exception : Dry Sift de précision, Frozen Sift cryogénique et 2x Static 99% trichome heads.',
   profileImage: '',
@@ -39,7 +39,7 @@ export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
     botUsername: TELEGRAM_BOT_CONFIG.botUsername || 'F2nOfficiel_Bot',
     botUrl: TELEGRAM_BOT_CONFIG.botUrl || 'https://t.me/F2nOfficiel_Bot',
     whatsapp: '',
-    instagram: '@trichomemontane',
+    instagram: '@carteldelfarmez',
     channel: 'https://t.me/F2nOfficiel_Bot',
   },
 };
@@ -55,12 +55,18 @@ export function subscribeBrandSettings(callback: (settings: BrandSettings) => vo
     (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as BrandSettings;
-        // If the stored name is still an old one, merge with TRICHOME MONTANE
-        const isOldName = !data.brandName || data.brandName === 'F2N' || data.brandName === 'F2N PARIS' || data.brandName === 'PERK VIBES FARMZ';
+        // If the stored name is still an old one, update to Cartel Del Farmez
+        const isOldName = !data.brandName || data.brandName === 'F2N' || data.brandName === 'F2N PARIS' || data.brandName === 'PERK VIBES FARMZ' || data.brandName === 'TRICHOME MONTANE' || data.brandName.includes('Trichome');
+        if (isOldName) {
+          updateDoc(docRef, {
+            brandName: 'Cartel Del Farmez',
+            updatedAt: serverTimestamp(),
+          }).catch((err) => console.warn('Could not auto-migrate brandName:', err));
+        }
         callback({
           ...DEFAULT_BRAND_SETTINGS,
           ...data,
-          brandName: isOldName ? DEFAULT_BRAND_SETTINGS.brandName : data.brandName,
+          brandName: isOldName ? 'Cartel Del Farmez' : data.brandName,
           tagline: isOldName ? DEFAULT_BRAND_SETTINGS.tagline : (data.tagline || DEFAULT_BRAND_SETTINGS.tagline),
           description: isOldName ? DEFAULT_BRAND_SETTINGS.description : (data.description || DEFAULT_BRAND_SETTINGS.description),
           contactLinks: {

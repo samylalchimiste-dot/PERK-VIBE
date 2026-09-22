@@ -174,7 +174,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
             <div className="flex items-center gap-2 truncate">
               <span className="text-amber-400">⚡</span>
               <span className="truncate">
-                {selectedFarm === 'ALL' ? 'TRICHOME MONTANE' : selectedFarm}
+                {selectedFarm === 'ALL' ? 'Cartel Del Farmez' : selectedFarm}
               </span>
             </div>
             <ChevronDown
@@ -206,7 +206,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
 
               <div className="h-px bg-zinc-800 my-1" />
 
-              {['TRICHOME MONTANE'].map((farm) => {
+              {['Cartel Del Farmez'].map((farm) => {
                 const active = selectedFarm === farm;
                 return (
                   <button

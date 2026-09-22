@@ -1,5 +1,5 @@
 // ==========================================
-// CATALOGUE & MENU TYPES (TRICHOME MONTANE)
+// CATALOGUE & MENU TYPES (Cartel Del Farmez)
 // ==========================================
 
 export type ProductStockStatus = 'AVAILABLE' | 'LOW_STOCK' | 'SOLD_OUT';
