@@ -132,7 +132,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featuredStyle
         <div className="pt-2 flex items-center justify-between">
           <div className="inline-flex items-baseline px-2.5 py-1 rounded-xl bg-[#0e192c] border border-cyan-900/60 text-cyan-300 font-bold text-xs tracking-tight">
             <span>{product.price}</span>
-            <span className="text-[10px] ml-0.5 font-normal">{product.currency || '€'}</span>
+            <span className="text-[10px] ml-0.5 font-normal">{product.currency || '€'}/g</span>
           </div>
 
           {/* Discreet stock dot */}

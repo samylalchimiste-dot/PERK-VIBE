@@ -39,6 +39,12 @@ service cloud.firestore {
       allow write: if isAuthenticated() || true;
     }
 
+    // Media Items (Videos & High-Res Chunks stored in Firestore)
+    match /media_items/{mediaId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+    }
+
     // Admins Collection
     match /admins/{adminId} {
       // Users can check their own admin doc or authenticated admins can read

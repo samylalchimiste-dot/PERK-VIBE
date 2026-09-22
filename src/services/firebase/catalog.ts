@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage, app } from './config';
+import { uploadMediaToFirestore } from './mediaStore';
 import { Product, Category, BrandSettings, ProductStockStatus, ProductPublishStatus } from '../../types';
 import { TELEGRAM_BOT_CONFIG } from '../telegram/telegramBotConfig';
 
@@ -432,10 +433,11 @@ export async function uploadCatalogVideo(
   folderOrProgress?: string | ((progress: number) => void),
   onProgress?: (progress: number) => void
 ): Promise<string> {
-  const folder = typeof folderOrProgress === 'string' ? folderOrProgress : 'catalog/videos';
   const progressCb = typeof folderOrProgress === 'function' ? folderOrProgress : onProgress;
-  if (progressCb) progressCb(15);
-  return uploadCatalogMedia(file, folder, progressCb, 4000);
+  if (progressCb) progressCb(10);
+  
+  // Directly save video to Firestore in dedicated media_items chunk collection
+  return await uploadMediaToFirestore(file, progressCb);
 }
 
 export async function compressImageToDataURL(file: File, maxWidth: number = 720, quality: number = 0.68): Promise<string> {

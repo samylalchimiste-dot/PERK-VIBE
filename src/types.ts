@@ -13,12 +13,19 @@ export interface ProductPhoto {
   caption?: string;
 }
 
+export interface ProductPricingTier {
+  weight: string; // e.g. '5g', '10g', '25g', '50g', '100g'
+  price: number; // e.g. 60, 120, 260
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   currency?: string;
+  pricingTiers?: ProductPricingTier[];
+  availableUnits?: number; // e.g. 25
   categoryId: string;
   categoryName?: string;
   images: string[];

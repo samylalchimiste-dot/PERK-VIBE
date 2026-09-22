@@ -9,7 +9,9 @@ import { playClickSound } from '../../services/audio/soundService';
 import { DEFAULT_BRAND_SETTINGS, getBrandSettings } from '../../services/firebase/catalog';
 
 interface CartItem {
+  cartKey?: string;
   product: Product;
+  selectedWeight?: string;
   quantity: number;
 }
 
@@ -33,10 +35,10 @@ export const CartPage: React.FC = () => {
     }
   }, []);
 
-  const removeItem = (productId: string) => {
+  const removeItem = (itemKey: string, productId: string) => {
     hapticFeedback('medium');
     playClickSound();
-    const updated = items.filter((it) => it.product.id !== productId);
+    const updated = items.filter((it) => (it.cartKey ? it.cartKey !== itemKey : it.product.id !== productId));
     setItems(updated);
     localStorage.setItem('pvf_cart', JSON.stringify(updated));
     window.dispatchEvent(new Event('cart-updated'));
@@ -56,7 +58,8 @@ export const CartPage: React.FC = () => {
     playClickSound();
     let text = '🛒 *NOUVELLE COMMANDE TRICHOME MONTANE*\n\n';
     items.forEach((it) => {
-      text += `• ${it.quantity}x ${it.product.name} - ${it.product.price}€\n`;
+      const weightInfo = it.selectedWeight ? ` (${it.selectedWeight})` : '';
+      text += `• ${it.quantity}x ${it.product.name}${weightInfo} - ${it.product.price * it.quantity}€\n`;
     });
     text += `\n💰 *Total:* ${total}€`;
     const tgLink = `${telegramUrl}?text=${encodeURIComponent(text)}`;
@@ -113,9 +116,9 @@ export const CartPage: React.FC = () => {
         ) : (
           <div className="space-y-3">
             <div className="space-y-2">
-              {items.map((it) => (
+              {items.map((it, idx) => (
                 <div
-                  key={it.product.id}
+                  key={it.cartKey || `${it.product.id}_${idx}`}
                   className="rounded-2xl bg-[#0c1322] border border-slate-800/80 p-3 flex items-center justify-between gap-3"
                 >
                   <img
@@ -125,14 +128,21 @@ export const CartPage: React.FC = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-xs text-slate-100 truncate">{it.product.name}</h4>
-                    <p className="text-[10px] text-cyan-400">{it.product.categoryName}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-cyan-400 font-medium">{it.product.categoryName || 'EXTRACTION'}</span>
+                      {it.selectedWeight && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold">
+                          {it.selectedWeight}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs font-mono font-semibold text-slate-200 mt-1">
                       {it.product.price}€ × {it.quantity} = {it.product.price * it.quantity}€
                     </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeItem(it.product.id)}
+                    onClick={() => removeItem(it.cartKey || '', it.product.id)}
                     className="p-2 rounded-xl text-slate-500 hover:text-red-400 transition"
                   >
                     <Trash2 className="w-4 h-4" />

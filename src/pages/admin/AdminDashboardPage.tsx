@@ -51,6 +51,7 @@ import {
 } from '../../services/firebase/catalog';
 import { hapticFeedback } from '../../services/telegram/telegramService';
 import { playClickSound } from '../../services/audio/soundService';
+import { FirestoreVideoPlayer } from '../../components/common/FirestoreVideoPlayer';
 
 type AdminTab = 'products' | 'categories' | 'brand';
 
@@ -145,7 +146,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [prodFormName, setProdFormName] = useState('');
   const [prodFormDesc, setProdFormDesc] = useState('');
-  const [prodFormPrice, setProdFormPrice] = useState<string>('70');
+  const [prodFormPrice, setProdFormPrice] = useState<string>('3');
   const [prodFormCurrency, setProdFormCurrency] = useState('€');
   const [prodFormCategory, setProdFormCategory] = useState('');
   const [prodFormStock, setProdFormStock] = useState<ProductStockStatus>('AVAILABLE');
@@ -153,6 +154,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [prodFormFeatured, setProdFormFeatured] = useState(false);
   const [prodFormIsNew, setProdFormIsNew] = useState(false);
   const [prodFormSku, setProdFormSku] = useState('');
+  const [prodFormAvailableUnits, setProdFormAvailableUnits] = useState<number>(25);
   const [prodFormImages, setProdFormImages] = useState<string[]>([]);
   const [storageErrorDetails, setStorageErrorDetails] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -182,7 +184,7 @@ export const AdminDashboardPage: React.FC = () => {
     setIsSavingProduct(false);
     setProdFormName('');
     setProdFormDesc('');
-    setProdFormPrice('70');
+    setProdFormPrice('3');
     setProdFormCurrency(brand.currency || '€');
     setProdFormCategory(categories[0]?.id || 'cat_dry');
     setProdFormStock('AVAILABLE');
@@ -190,6 +192,7 @@ export const AdminDashboardPage: React.FC = () => {
     setProdFormFeatured(false);
     setProdFormIsNew(true);
     setProdFormSku(`TM-${Math.floor(100 + Math.random() * 900)}`);
+    setProdFormAvailableUnits(25);
     setProdFormImages([]);
     setProdFormVideoUrl('');
     setProdFormDetails([
@@ -216,6 +219,7 @@ export const AdminDashboardPage: React.FC = () => {
     setProdFormFeatured(p.featured);
     setProdFormIsNew(p.isNew);
     setProdFormSku(p.sku || `TM-${Math.floor(100 + Math.random() * 900)}`);
+    setProdFormAvailableUnits(p.availableUnits || 25);
     setProdFormImages(p.images && p.images.length > 0 ? p.images : (p.mainImage ? [p.mainImage] : []));
     setProdFormVideoUrl(p.videoUrl || '');
     
@@ -301,49 +305,28 @@ export const AdminDashboardPage: React.FC = () => {
     if (!files || files.length === 0) return;
     const file = files[0];
     setIsUploadingVideo(true);
-    setVideoUploadProgress(15);
+    setVideoUploadProgress(10);
     setStorageErrorDetails(null);
 
     try {
-      if (file.size > 30 * 1024 * 1024) {
-        throw new Error('Vidéo trop volumineuse (> 30 Mo). Veuillez utiliser un fichier plus court ou coller un lien direct.');
+      if (file.size > 25 * 1024 * 1024) {
+        throw new Error('Vidéo trop volumineuse (> 25 Mo). Veuillez utiliser un fichier de moins de 25 Mo.');
       }
 
+      showNotice('Sauvegarde de la vidéo sur Firestore...');
       const downloadUrl = await uploadCatalogVideo(file, (pct) => {
-        setVideoUploadProgress(Math.max(15, pct));
+        setVideoUploadProgress(Math.max(10, pct));
       });
       setProdFormVideoUrl(downloadUrl);
-      showNotice('Vidéo ajoutée avec succès !');
+      showNotice('Vidéo enregistrée sur Firestore avec succès !');
     } catch (err: any) {
-      console.warn('Video upload failed:', err);
-      // Fallback: if video is under 15MB, load as local data URL so it plays seamlessly
-      if (file.size <= 15 * 1024 * 1024) {
-        showNotice('Chargement direct de la vidéo...');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target?.result as string;
-          setProdFormVideoUrl(dataUrl);
-          showNotice('Vidéo enregistrée pour ce produit !');
-          setIsUploadingVideo(false);
-          setVideoUploadProgress(0);
-        };
-        reader.onerror = () => {
-          showNotice('Erreur lors du chargement de la vidéo', 'error');
-          setIsUploadingVideo(false);
-          setVideoUploadProgress(0);
-        };
-        reader.readAsDataURL(file);
-        return;
-      } else {
-        const msg = "Stockage cloud indisponible pour les vidéos > 15 Mo. Vous pouvez coller un lien direct vidéo (Telegram, MP4).";
-        setStorageErrorDetails(msg);
-        showNotice(msg, 'error');
-      }
+      console.warn('Video upload to Firestore error:', err);
+      const msg = err?.message || 'Erreur lors de l\'enregistrement de la vidéo sur Firestore';
+      setStorageErrorDetails(msg);
+      showNotice(msg, 'error');
     } finally {
-      if (!isUploadingVideo) {
-        setIsUploadingVideo(false);
-        setVideoUploadProgress(0);
-      }
+      setIsUploadingVideo(false);
+      setVideoUploadProgress(0);
       if (videoInputRef.current) videoInputRef.current.value = '';
     }
   };
@@ -406,14 +389,8 @@ export const AdminDashboardPage: React.FC = () => {
       }
     }
 
-    // Clean video URL: if it's a huge base64 data url (> 400KB), prevent it from blowing up Firestore
+    // Clean video URL
     let cleanVideoUrl = prodFormVideoUrl.trim();
-    if (cleanVideoUrl.startsWith('data:video') && cleanVideoUrl.length > 500000) {
-      const warning = 'La vidéo locale dépasse la limite de la base. Veuillez plutôt insérer un lien vidéo direct (Telegram ou MP4).';
-      setFormError(warning);
-      showNotice(warning, 'error');
-      return;
-    }
 
     setIsSavingProduct(true);
     try {
@@ -431,6 +408,7 @@ export const AdminDashboardPage: React.FC = () => {
           featured: prodFormFeatured,
           isNew: prodFormIsNew,
           sku: prodFormSku.trim(),
+          availableUnits: Number(prodFormAvailableUnits) || 25,
           images: imagesToSave,
           mainImage: imagesToSave[0],
           videoUrl: cleanVideoUrl || '',
@@ -451,6 +429,7 @@ export const AdminDashboardPage: React.FC = () => {
           featured: prodFormFeatured,
           isNew: prodFormIsNew,
           sku: prodFormSku.trim() || `TM-${Math.floor(100 + Math.random() * 900)}`,
+          availableUnits: Number(prodFormAvailableUnits) || 25,
           images: imagesToSave,
           mainImage: imagesToSave[0],
           videoUrl: cleanVideoUrl || '',
@@ -1508,11 +1487,12 @@ export const AdminDashboardPage: React.FC = () => {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="block text-zinc-400 font-mono uppercase mb-1">
-                      Prix *
+                      Prix au gramme (€/g) *
                     </label>
                     <input
                       type="number"
                       step="any"
+                      placeholder="Ex: 3"
                       value={prodFormPrice}
                       onChange={(e) => setProdFormPrice(e.target.value)}
                       required
@@ -1531,6 +1511,9 @@ export const AdminDashboardPage: React.FC = () => {
                     />
                   </div>
                 </div>
+                <p className="text-[11px] text-zinc-500 font-mono -mt-2">
+                  💡 Calcul automatique des paliers : 5g ({Number(prodFormPrice || 0) * 5}€), 10g ({Number(prodFormPrice || 0) * 10}€), 25g ({Number(prodFormPrice || 0) * 25}€), 50g ({Number(prodFormPrice || 0) * 50}€), 100g ({Number(prodFormPrice || 0) * 100}€)
+                </p>
 
                 <div>
                   <label className="block text-zinc-400 font-mono uppercase mb-1">
@@ -1547,17 +1530,31 @@ export const AdminDashboardPage: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-zinc-400 font-mono uppercase mb-1">
-                    Référence SKU
-                  </label>
-                  <input
-                    type="text"
-                    value={prodFormSku}
-                    onChange={(e) => setProdFormSku(e.target.value)}
-                    placeholder="Ex: PVF-STATIC-001"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs font-mono"
-                  />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-zinc-400 font-mono uppercase mb-1">
+                      Référence SKU
+                    </label>
+                    <input
+                      type="text"
+                      value={prodFormSku}
+                      onChange={(e) => setProdFormSku(e.target.value)}
+                      placeholder="Ex: TM-420"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs font-mono"
+                    />
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-zinc-400 font-mono uppercase mb-1">
+                      Nb Dispo
+                    </label>
+                    <input
+                      type="number"
+                      value={prodFormAvailableUnits}
+                      onChange={(e) => setProdFormAvailableUnits(parseInt(e.target.value, 10) || 0)}
+                      placeholder="25"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs font-mono text-center"
+                    />
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -1763,12 +1760,12 @@ export const AdminDashboardPage: React.FC = () => {
                     </label>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
-                    Sauvegarde Firebase Storage
+                    Sauvegarde Firestore Cloud
                   </span>
                 </div>
 
                 <p className="text-[11px] text-zinc-400">
-                  Ajoutez une vidéo de haute qualité directement depuis votre appareil (caméra ou galerie). La vidéo sera hébergée sur Firebase Storage.
+                  Ajoutez une vidéo de haute qualité directement depuis votre appareil (caméra ou galerie). La vidéo est découpée et stockée directement sur votre base Firestore.
                 </p>
 
                 {/* Upload Action */}
@@ -1793,7 +1790,7 @@ export const AdminDashboardPage: React.FC = () => {
                     <Upload className="w-3.5 h-3.5" />
                     <span>
                       {isUploadingVideo 
-                        ? `Téléversement Firebase (${videoUploadProgress}%)...` 
+                        ? `Envoi Firestore (${videoUploadProgress}%)...` 
                         : '🎥 Ajouter une vidéo depuis mon appareil'}
                     </span>
                   </label>
@@ -1803,7 +1800,7 @@ export const AdminDashboardPage: React.FC = () => {
                       type="url"
                       value={manualVideoUrl}
                       onChange={(e) => setManualVideoUrl(e.target.value)}
-                      placeholder="Ou coller URL vidéo Firebase..."
+                      placeholder="Ou coller URL vidéo directe..."
                       className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-zinc-500 font-mono"
                     />
                     <button
@@ -1826,7 +1823,7 @@ export const AdminDashboardPage: React.FC = () => {
                 {isUploadingVideo && (
                   <div className="space-y-1 bg-zinc-900/90 p-3 rounded-xl border border-zinc-800">
                     <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                      <span>Téléversement vers Firebase Storage en cours...</span>
+                      <span>Sauvegarde vers la base Firestore en cours...</span>
                       <span className="text-emerald-400 font-bold">{videoUploadProgress}%</span>
                     </div>
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
@@ -1861,8 +1858,8 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
 
                     <div className="relative rounded-xl overflow-hidden bg-black aspect-video max-h-52 border border-zinc-800 flex items-center justify-center">
-                      <video
-                        src={prodFormVideoUrl}
+                      <FirestoreVideoPlayer
+                        videoUrl={prodFormVideoUrl}
                         controls
                         playsInline
                         preload="metadata"
