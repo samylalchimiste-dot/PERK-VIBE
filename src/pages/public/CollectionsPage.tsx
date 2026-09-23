@@ -44,7 +44,7 @@ export const CollectionsPage: React.FC = () => {
         <div className="pt-1">
           <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[10px] uppercase tracking-widest mb-1">
             <Sparkles className="w-3 h-3 text-emerald-400" />
-            <span>{brand.brandName || 'Cartel Del Farmez'}</span>
+            <span>{brand.brandName || 'TRICOME LAB'}</span>
           </div>
           <h1 className="text-2xl font-extrabold uppercase tracking-tight text-white">
             Gammes & Filtrations

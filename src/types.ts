@@ -1,5 +1,5 @@
 // ==========================================
-// CATALOGUE & MENU TYPES (Cartel Del Farmez)
+// CATALOGUE & MENU TYPES (TRICOME LAB)
 // ==========================================
 
 export type ProductStockStatus = 'AVAILABLE' | 'LOW_STOCK' | 'SOLD_OUT';

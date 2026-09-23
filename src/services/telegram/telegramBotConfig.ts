@@ -1,12 +1,12 @@
 /**
  * Telegram Bot Configuration & Integration
- * Connected to official bot: CARTEL DEL FARMEZ BOT ⚡ (@F2nOfficiel_Bot)
+ * Connected to official bot: TRICOME LAB BOT ⚡ (@F2nOfficiel_Bot)
  */
 
 export const TELEGRAM_BOT_CONFIG = {
   token: '8554779751:AAEgcpOnFeaP3MJhIgyORUCtExk6Pt0d8Fc',
   botUsername: 'F2nOfficiel_Bot',
-  botName: 'CARTEL DEL FARMEZ BOT ⚡',
+  botName: 'TRICOME LAB BOT ⚡',
   botUrl: 'https://t.me/F2nOfficiel_Bot',
   apiUrl: 'https://api.telegram.org/bot8554779751:AAEgcpOnFeaP3MJhIgyORUCtExk6Pt0d8Fc',
 };

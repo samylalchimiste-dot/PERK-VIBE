@@ -12,8 +12,8 @@ export const NetworksModal: React.FC<NetworksModalProps> = ({ isOpen, onClose })
 
   const networks = [
     {
-      title: 'Canal Officiel Cartel Del Farmez',
-      handle: '@CartelDelFarmez',
+      title: 'Canal Officiel TRICOME LAB',
+      handle: '@TricomeLab',
       desc: 'Drops officiels, nouveaux arrivages Static, Frozen & Dry',
       link: 'https://t.me/F2nOfficiel_Bot',
       icon: Send,
@@ -22,7 +22,7 @@ export const NetworksModal: React.FC<NetworksModalProps> = ({ isOpen, onClose })
     },
     {
       title: 'Communauté & Chat Officiel',
-      handle: '@CartelDelFarmez_Chat',
+      handle: '@TricomeLab_Chat',
       desc: 'Échanges en direct entre connaisseurs et retours de dégustation',
       link: 'https://t.me/F2nOfficiel_Bot',
       icon: MessageSquare,
@@ -63,7 +63,7 @@ export const NetworksModal: React.FC<NetworksModalProps> = ({ isOpen, onClose })
           </div>
           <div>
             <h3 className="font-extrabold text-base text-white">
-              Réseaux Officiels Cartel Del Farmez
+              Réseaux Officiels TRICOME LAB
             </h3>
             <p className="text-[11px] text-purple-300">
               Rejoignez tous les canaux officiels de la farm

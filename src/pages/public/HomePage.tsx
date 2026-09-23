@@ -107,7 +107,7 @@ export const HomePage: React.FC = () => {
               <div className="w-24 h-24 rounded-full p-1 border-2 border-amber-400/80 shadow-[0_0_30px_rgba(251,191,36,0.4)] overflow-hidden bg-zinc-950">
                 <img
                   src={brand.profileImage}
-                  alt={brand.brandName || 'Cartel Del Farmez'}
+                  alt={brand.brandName || 'TRICOME LAB'}
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
@@ -124,14 +124,13 @@ export const HomePage: React.FC = () => {
             PETITE SÉRIE
           </div>
 
-          {/* Giant Stencil / Block Typography: CARTEL / DEL / FARMEZ */}
+          {/* Giant Stencil / Block Typography: TRICOME / LAB */}
           <div 
             className="font-black text-4xl sm:text-5xl uppercase tracking-wider text-white leading-[0.92] my-2 select-none z-10 drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)]"
             style={{ fontFamily: "'Bebas Neue', 'Montserrat', sans-serif" }}
           >
-            <div className="tracking-[0.1em] text-zinc-100">CARTEL</div>
-            <div className="tracking-[0.1em] text-white">DEL</div>
-            <div className="tracking-[0.14em] text-amber-400">FARMEZ</div>
+            <div className="tracking-[0.12em] text-zinc-100">TRICOME</div>
+            <div className="tracking-[0.18em] text-amber-400">LAB</div>
           </div>
 
           {/* Subtitle: COLLECTION PREMIUM */}
@@ -243,7 +242,7 @@ export const HomePage: React.FC = () => {
                   <h3 className="font-bold text-sm text-zinc-100">
                     {selectedCategory !== 'ALL' || selectedFarm !== 'ALL'
                       ? 'Aucun produit dans cette sélection'
-                      : 'Catalogue Cartel Del Farmez vide (0 produit)'}
+                      : 'Catalogue TRICOME LAB vide (0 produit)'}
                   </h3>
                   <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
                     {selectedCategory !== 'ALL' || selectedFarm !== 'ALL'

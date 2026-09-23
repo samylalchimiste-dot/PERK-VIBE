@@ -35,7 +35,7 @@ export const ContactPage: React.FC = () => {
 
           <div className="space-y-1">
             <h2 className="text-base font-bold text-white uppercase tracking-wide">
-              Support Officiel Cartel Del Farmez
+              Support Officiel TRICOME LAB
             </h2>
             <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
               Pour passer commande, poser une question sur nos batchs ou solliciter une livraison sur-mesure, notre équipe vous répond en direct.

@@ -22,7 +22,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ totalActiveCount }) =>
           La connexion<br />ultime.
         </h1>
         <p className="text-xs sm:text-sm text-purple-200/80 max-w-xs sm:max-w-md mx-auto leading-relaxed font-medium">
-          Trouve les meilleures sélections de la communauté Cartel Del Farmez, notées en direct par les connaisseurs.
+          Trouve les meilleures sélections de la communauté TRICOME LAB, notées en direct par les connaisseurs.
         </p>
       </div>
 

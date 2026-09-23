@@ -172,7 +172,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
         </button>
 
         <div className="text-center">
-          <div className="font-extrabold text-xs tracking-wider text-amber-400 uppercase">Cartel Del Farmez</div>
+          <div className="font-extrabold text-xs tracking-wider text-amber-400 uppercase">TRICOME LAB</div>
           <div className="text-[10px] text-purple-300">menu & farm app</div>
         </div>
 
@@ -203,7 +203,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
             <div className="p-4 bg-[#0a061c] rounded-2xl border border-purple-800/40 text-[11px] text-purple-300 text-left space-y-2">
               <div className="flex items-center gap-2 font-bold text-white">
                 <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                <span>Processus de validation Cartel Del Farmez :</span>
+                <span>Processus de validation TRICOME LAB :</span>
               </div>
               <ul className="space-y-1.5 text-purple-300/90 list-disc list-inside">
                 <li>Examen des informations de la boutique et des réseaux.</li>
@@ -228,7 +228,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
                 <span>Inscrire ma boutique</span>
               </h2>
               <p className="text-xs text-purple-300/80 leading-relaxed">
-                Propose ta boutique au classement Cartel Del Farmez. Chaque demande est examinée et validée manuellement par l'équipe avant d'être mise en ligne.
+                Propose ta boutique au classement TRICOME LAB. Chaque demande est examinée et validée manuellement par l'équipe avant d'être mise en ligne.
               </p>
             </div>
 

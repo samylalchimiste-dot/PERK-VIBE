@@ -56,7 +56,7 @@ export const CartPage: React.FC = () => {
   const handleOrderTelegram = () => {
     hapticFeedback('medium');
     playClickSound();
-    let text = '🛒 *NOUVELLE COMMANDE CARTEL DEL FARMEZ*\n\n';
+    let text = '🛒 *NOUVELLE COMMANDE TRICOME LAB*\n\n';
     items.forEach((it) => {
       const weightInfo = it.selectedWeight ? ` (${it.selectedWeight})` : '';
       text += `• ${it.quantity}x ${it.product.name}${weightInfo} - ${it.product.price * it.quantity}€\n`;
