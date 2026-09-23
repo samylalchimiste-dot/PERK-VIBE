@@ -92,6 +92,23 @@ export function initTelegramWebApp(): void {
   try {
     tg.ready();
     tg.expand();
+
+    // Enable closing confirmation to prevent accidental loss
+    if (typeof (tg as any).enableClosingConfirmation === 'function') {
+      try {
+        (tg as any).enableClosingConfirmation();
+      } catch {
+        // ignore
+      }
+    }
+
+    // Adapt Telegram theme background if available
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('dark');
+      if (tg.backgroundColor) {
+        document.body.style.backgroundColor = '#050608';
+      }
+    }
   } catch (err) {
     console.warn('Could not initialize Telegram WebApp view:', err);
   }

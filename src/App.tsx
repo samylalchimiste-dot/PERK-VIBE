@@ -23,11 +23,20 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 
 export function App() {
   useEffect(() => {
-    // Initialize Telegram Mini App viewport & theme
-    initTelegramWebApp();
-    // One-time purge of any leftover demo clothing/mock products & enforce 4 categories
-    purgeAllMockProductsOnce().catch(console.warn);
-    ensureCanonicalCategories().catch(console.warn);
+    // Initialize Telegram Mini App viewport & theme immediately
+    try {
+      initTelegramWebApp();
+    } catch (e) {
+      console.warn('Telegram init skipped:', e);
+    }
+
+    // Run non-critical background maintenance without blocking the UI thread
+    const timer = setTimeout(() => {
+      purgeAllMockProductsOnce().catch(console.warn);
+      ensureCanonicalCategories().catch(console.warn);
+    }, 1200);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (

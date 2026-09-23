@@ -24,6 +24,7 @@ const MEDIA_COLLECTION = 'media_items';
 const CHUNK_SIZE = 600 * 1024; // 600KB per chunk safe margin under Firestore 1MB doc limit
 
 const memoryBlobCache = new Map<string, string>();
+const inFlightResolutions = new Map<string, Promise<string>>();
 
 export interface StoredMediaMeta {
   id: string;
@@ -154,6 +155,7 @@ export function extractMediaId(url: string): string {
 /**
  * Resolves a `firestore-media://${mediaId}` or regular URL into a playable/renderable Object URL.
  * If already a normal URL or base64, returns it as-is.
+ * Features concurrent chunk loading for blazing fast video startup on Telegram Mini App.
  */
 export async function resolveMediaUrl(url: string): Promise<string> {
   if (!url) return '';
@@ -166,39 +168,61 @@ export async function resolveMediaUrl(url: string): Promise<string> {
     return memoryBlobCache.get(url)!;
   }
 
-  const mediaId = extractMediaId(url);
-  try {
-    const manifestRef = doc(db, MEDIA_COLLECTION, mediaId);
-    const manifestSnap = await getDoc(manifestRef);
-
-    if (!manifestSnap.exists()) {
-      console.warn(`[Firestore Media] Document manifest not found for ${mediaId}`);
-      return '';
-    }
-
-    const meta = manifestSnap.data() as StoredMediaMeta;
-    const totalChunks = meta.totalChunks || 1;
-    const mimeType = meta.mimeType || 'video/mp4';
-
-    // Fetch all chunks in order
-    const chunksData: Uint8Array[] = [];
-    for (let i = 0; i < totalChunks; i++) {
-      const chunkRef = doc(db, MEDIA_COLLECTION, `${mediaId}_chunk_${i}`);
-      const chunkSnap = await getDoc(chunkRef);
-      if (chunkSnap.exists()) {
-        const rawBase64 = chunkSnap.data()?.data || '';
-        chunksData.push(base64ToUint8Array(rawBase64));
-      }
-    }
-
-    const blob = new Blob(chunksData, { type: mimeType });
-    const blobUrl = URL.createObjectURL(blob);
-    memoryBlobCache.set(url, blobUrl);
-    return blobUrl;
-  } catch (err) {
-    console.error(`[Firestore Media] Failed to reconstruct media for ${mediaId}:`, err);
-    return '';
+  // Deduplicate simultaneous requests for the same media
+  if (inFlightResolutions.has(url)) {
+    return inFlightResolutions.get(url)!;
   }
+
+  const resolutionPromise = (async () => {
+    const mediaId = extractMediaId(url);
+    try {
+      const manifestRef = doc(db, MEDIA_COLLECTION, mediaId);
+      const manifestSnap = await getDoc(manifestRef);
+
+      if (!manifestSnap.exists()) {
+        console.warn(`[Firestore Media] Document manifest not found for ${mediaId}`);
+        return '';
+      }
+
+      const meta = manifestSnap.data() as StoredMediaMeta;
+      const totalChunks = meta.totalChunks || 1;
+      const mimeType = meta.mimeType || 'video/mp4';
+
+      // Fetch all chunks in PARALLEL batches (up to 4 concurrently) for ultra fast resolution
+      const chunksData: Uint8Array[] = new Array(totalChunks);
+      const chunkIndexes = Array.from({ length: totalChunks }, (_, i) => i);
+      
+      const BATCH_SIZE = 4;
+      for (let i = 0; i < chunkIndexes.length; i += BATCH_SIZE) {
+        const batch = chunkIndexes.slice(i, i + BATCH_SIZE);
+        await Promise.all(
+          batch.map(async (idx) => {
+            const chunkRef = doc(db, MEDIA_COLLECTION, `${mediaId}_chunk_${idx}`);
+            const chunkSnap = await getDoc(chunkRef);
+            if (chunkSnap.exists()) {
+              const rawBase64 = chunkSnap.data()?.data || '';
+              chunksData[idx] = base64ToUint8Array(rawBase64);
+            } else {
+              chunksData[idx] = new Uint8Array(0);
+            }
+          })
+        );
+      }
+
+      const blob = new Blob(chunksData, { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+      memoryBlobCache.set(url, blobUrl);
+      return blobUrl;
+    } catch (err) {
+      console.error(`[Firestore Media] Failed to reconstruct media for ${mediaId}:`, err);
+      return '';
+    } finally {
+      inFlightResolutions.delete(url);
+    }
+  })();
+
+  inFlightResolutions.set(url, resolutionPromise);
+  return resolutionPromise;
 }
 
 /**

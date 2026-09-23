@@ -178,6 +178,9 @@ export async function deleteCategory(id: string): Promise<void> {
 // PRODUCTS API
 // ==========================================
 
+// Cache for instant product sheet opening
+const productsMemoryCache = new Map<string, Product>();
+
 export function subscribeProducts(
   callback: (products: Product[]) => void,
   options?: { categoryId?: string; publishedOnly?: boolean }
@@ -190,10 +193,13 @@ export function subscribeProducts(
     (snapshot) => {
       let list: Product[] = [];
       snapshot.forEach((docSnap) => {
-        list.push({
+        const item: Product = {
           id: docSnap.id,
           ...(docSnap.data() as Omit<Product, 'id'>),
-        });
+        };
+        list.push(item);
+        // Pre-populate memory cache
+        productsMemoryCache.set(item.id, item);
       });
 
       // Filter in memory to avoid needing complex Firestore composite indexes
@@ -233,11 +239,17 @@ export function subscribeProducts(
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
+  // Check memory cache first for 0ms response
+  if (productsMemoryCache.has(id)) {
+    return productsMemoryCache.get(id)!;
+  }
   try {
     const docRef = doc(db, PRODUCTS_COLLECTION, id);
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
-    return { id: snap.id, ...(snap.data() as Omit<Product, 'id'>) };
+    const prod = { id: snap.id, ...(snap.data() as Omit<Product, 'id'>) };
+    productsMemoryCache.set(id, prod);
+    return prod;
   } catch (err) {
     console.error(`Error getting product ${id}:`, err);
     return null;

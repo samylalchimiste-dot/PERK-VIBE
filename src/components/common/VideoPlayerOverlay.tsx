@@ -77,18 +77,38 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
 
   // Handle Autoplay once src is ready
   useEffect(() => {
-    if (resolvedSrc && videoRef.current) {
-      const v = videoRef.current;
-      v.muted = isMuted;
-      v.play()
-        .then(() => setIsPlaying(true))
-        .catch(() => {
-          // If unmuted autoplay is blocked by browser/Telegram, mute and try again
-          v.muted = true;
-          setIsMuted(true);
-          v.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-        });
+    if (!resolvedSrc || !videoRef.current) return;
+    const v = videoRef.current;
+    
+    // Telegram Mini App strict policy: MUST be muted and have playsinline to start automatically
+    v.muted = true;
+    setIsMuted(true);
+
+    const tryPlay = () => {
+      const playPromise = v.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch((err) => {
+            console.warn('Autoplay prevented by Telegram/browser policy:', err);
+            setIsPlaying(false);
+          });
+      }
+    };
+
+    if (v.readyState >= 2) {
+      tryPlay();
+    } else {
+      v.addEventListener('loadeddata', tryPlay, { once: true });
+      v.addEventListener('canplay', tryPlay, { once: true });
     }
+
+    return () => {
+      v.removeEventListener('loadeddata', tryPlay);
+      v.removeEventListener('canplay', tryPlay);
+    };
   }, [resolvedSrc]);
 
   // Controls auto-hide after 3.5s of inactivity
@@ -172,15 +192,35 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
   if (hasError || !resolvedSrc) {
     return (
       <div className={`relative w-full aspect-[4/5] rounded-3xl overflow-hidden bg-[#07090e] border border-zinc-800 flex flex-col items-center justify-center p-6 text-center text-zinc-400 ${className}`}>
-        <p className="text-xs mb-3">La vidéo n'a pas pu être chargée.</p>
-        {hasPhotos && onSwitchToPhotos && (
+        <p className="text-xs mb-3 text-zinc-300">La vidéo n'a pas pu démarrer directement.</p>
+        <div className="flex items-center gap-2">
           <button
-            onClick={onSwitchToPhotos}
-            className="px-4 py-2 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-medium"
+            onClick={() => {
+              setHasError(false);
+              setIsLoading(true);
+              resolveMediaUrl(videoUrl)
+                .then((url) => {
+                  setResolvedSrc(url);
+                  setIsLoading(false);
+                })
+                .catch(() => {
+                  setHasError(true);
+                  setIsLoading(false);
+                });
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-cyan-600/90 hover:bg-cyan-500 text-zinc-950 font-bold text-xs shadow-md transition active:scale-95"
           >
-            Voir la photo
+            Relancer la vidéo
           </button>
-        )}
+          {hasPhotos && onSwitchToPhotos && (
+            <button
+              onClick={onSwitchToPhotos}
+              className="px-3.5 py-1.5 rounded-xl bg-zinc-800/90 border border-zinc-700 text-zinc-300 text-xs font-medium transition active:scale-95"
+            >
+              Voir la photo
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -200,6 +240,9 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
         src={resolvedSrc}
         poster={poster}
         playsInline
+        webkit-playsinline="true"
+        x5-playsinline="true"
+        preload="auto"
         autoPlay
         muted={isMuted}
         loop

@@ -6,7 +6,6 @@ import {
   subscribeProducts, 
   subscribeCategories, 
   subscribeBrandSettings, 
-  ensureCanonicalCategories,
   DEFAULT_BRAND_SETTINGS 
 } from '../../services/firebase/catalog';
 import { Header } from '../../components/common/Header';
@@ -34,13 +33,6 @@ export const HomePage: React.FC = () => {
       name: u?.first_name || u?.username || 'Yory',
       initial: (u?.first_name?.[0] || u?.username?.[0] || 'Y').toUpperCase(),
     };
-  }, []);
-
-  // Ensure canonical categories (2X STATIC, WPFF, DRY SIFT, FROZEN SIFT) exist
-  useEffect(() => {
-    ensureCanonicalCategories().catch((err) => {
-      console.warn('Category init warning:', err);
-    });
   }, []);
 
   // Real-time subscriptions
