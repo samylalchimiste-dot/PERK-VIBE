@@ -63,9 +63,9 @@ export const BrandInfoPage: React.FC = () => {
               <img
                 src={resolvedCover}
                 alt="Brand Cover"
-                className="w-full h-full object-cover object-center filter brightness-50"
+                className="w-full h-full object-cover object-center filter brightness-90 contrast-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0c1322]/80 via-[#0c1322]/90 to-[#0c1322]" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0c1322]/50 via-[#0c1322]/60 to-[#0c1322]/90" />
             </div>
           )}
 

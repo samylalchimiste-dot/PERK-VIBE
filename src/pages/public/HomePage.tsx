@@ -112,10 +112,9 @@ export const HomePage: React.FC = () => {
           <img
             src={resolvedCover}
             alt="Page Ambient Background"
-            className="w-full h-full object-cover object-center filter blur-xl scale-110 opacity-30"
+            className="w-full h-full object-cover object-center scale-100 opacity-60"
           />
-          <div className="absolute inset-0 bg-[#050608]/85" />
-          <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#050608]/60 to-[#050608]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050608]/40 via-[#050608]/50 to-[#050608]/90" />
         </div>
       )}
 
@@ -126,18 +125,18 @@ export const HomePage: React.FC = () => {
         {/* ========================================================================= */}
         {/* 2. HERO SECTION — EXACT VISUAL IDENTITY OF SCREENSHOT 1                   */}
         {/* ========================================================================= */}
-        <section className="relative pt-6 pb-6 px-4 rounded-3xl flex flex-col items-center text-center overflow-hidden border border-amber-500/20 shadow-2xl bg-zinc-950">
-          {/* Real Background Cover Image from Brand Settings */}
+        <section className="relative pt-6 pb-6 px-4 rounded-3xl flex flex-col items-center text-center overflow-hidden border border-amber-500/30 shadow-2xl bg-zinc-950/80 backdrop-blur-[2px]">
+          {/* Real Background Cover Image from Brand Settings - High Visibility & Clarity */}
           {resolvedCover && (
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
               <img
                 src={resolvedCover}
                 alt="Background Cover"
-                className="w-full h-full object-cover object-center scale-105 filter brightness-75 contrast-110"
+                className="w-full h-full object-cover object-center scale-100 filter brightness-95 contrast-105"
               />
-              {/* Luxury dark gradient fade overlay ensuring text & gold elements pop */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#050608]/75 via-[#050608]/85 to-[#050608]" />
-              <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#050608]/60 to-[#050608]/95" />
+              {/* Refined subtle overlay so photo remains clear and visible while text stays readable */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/65" />
+              <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-black/50" />
             </div>
           )}
 

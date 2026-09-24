@@ -65,8 +65,8 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
         )}
 
         {/* Elegant Multi-layered Dark Overlay for High Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/60 to-black/40" />
-        <div className="absolute inset-0 bg-radial-at-c from-transparent via-black/20 to-black/70 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/80 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-radial-at-c from-transparent via-transparent to-black/40 pointer-events-none" />
 
         {/* Badge Top Left */}
         <div className="absolute top-4 left-4 z-10">
