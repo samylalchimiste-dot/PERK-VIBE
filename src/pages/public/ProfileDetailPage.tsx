@@ -27,8 +27,6 @@ import { PhotoGalleryModal } from '../../components/public/PhotoGalleryModal';
 import { BottomNav } from '../../components/common/BottomNav';
 import { SubmissionModal } from '../../components/public/SubmissionModal';
 import { NetworksModal } from '../../components/public/NetworksModal';
-import { SecretAdminModal } from '../../components/common/SecretAdminModal';
-import { useTapCounter } from '../../hooks/useTapCounter';
 import { hapticFeedback, getTelegramWebApp, setupTelegramBackButton } from '../../services/telegram/telegramService';
 import { playVoteSound, playClickSound } from '../../services/audio/soundService';
 
@@ -45,12 +43,6 @@ export const ProfileDetailPage: React.FC = () => {
   // Modals
   const [isSubmissionOpen, setIsSubmissionOpen] = useState(false);
   const [isNetworksOpen, setIsNetworksOpen] = useState(false);
-  const [isSecretAdminOpen, setIsSecretAdminOpen] = useState(false);
-
-  // Secret 5-tap trigger on the profile avatar/header/title
-  const { handleTap: handleProfileSecretTap } = useTapCounter(5, 3500, () => {
-    setIsSecretAdminOpen(true);
-  });
 
   // Native Telegram Back Button integration
   useEffect(() => {
@@ -198,8 +190,7 @@ export const ProfileDetailPage: React.FC = () => {
         {/* Photo Gallery & Banner Card */}
         <div className="space-y-2">
           <div 
-            onClick={(e) => {
-              handleProfileSecretTap(e);
+            onClick={() => {
               if (photos.length > 0) {
                 hapticFeedback('light');
                 setIsGalleryOpen(true);
@@ -307,10 +298,7 @@ export const ProfileDetailPage: React.FC = () => {
         <div className="bg-[#120d29] border border-purple-800/40 rounded-3xl p-5 shadow-xl space-y-4">
           {/* Top Title & Category */}
           <div className="flex items-start justify-between gap-3">
-            <div 
-              onClick={handleProfileSecretTap}
-              className="space-y-1 min-w-0 cursor-pointer select-none"
-            >
+            <div className="space-y-1 min-w-0 select-none">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate">
                   {profile.name}
@@ -572,12 +560,6 @@ export const ProfileDetailPage: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {/* Secret Admin Passcode Modal on 5 taps */}
-      <SecretAdminModal
-        isOpen={isSecretAdminOpen}
-        onClose={() => setIsSecretAdminOpen(false)}
-      />
 
       {/* Fullscreen Photo Gallery Modal */}
       <PhotoGalleryModal

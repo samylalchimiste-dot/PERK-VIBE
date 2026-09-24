@@ -35,12 +35,12 @@ export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
   heroCtaText: 'Explorer le Menu',
   badgeText: 'Collection 2026',
   contactLinks: {
-    telegram: 'https://t.me/F2nOfficiel_Bot',
-    botUsername: TELEGRAM_BOT_CONFIG.botUsername || 'F2nOfficiel_Bot',
-    botUrl: TELEGRAM_BOT_CONFIG.botUrl || 'https://t.me/F2nOfficiel_Bot',
+    telegram: TELEGRAM_BOT_CONFIG.botUrl,
+    botUsername: TELEGRAM_BOT_CONFIG.botUsername,
+    botUrl: TELEGRAM_BOT_CONFIG.botUrl,
     whatsapp: '',
     instagram: '@tricomelab',
-    channel: 'https://t.me/F2nOfficiel_Bot',
+    channel: TELEGRAM_BOT_CONFIG.botUrl,
   },
 };
 

@@ -1,18 +1,16 @@
 /**
  * Telegram Bot Configuration & Web App Integration
- * Bot: TRICOME LAB BOT ⚡ (@F2nOfficiel_Bot)
+ * Bot: Noah Montane (@NoahMontane_Bot)
  */
 
 export const TELEGRAM_BOT_CONFIG = {
-  token: '8554779751:AAEgcpOnFeaP3MJhIgyORUCtExk6Pt0d8Fc',
-  botUsername: 'F2nOfficiel_Bot',
-  botName: 'TRICOME LAB BOT ⚡',
-  botUrl: 'https://t.me/F2nOfficiel_Bot',
-  apiUrl: 'https://api.telegram.org/bot8554779751:AAEgcpOnFeaP3MJhIgyORUCtExk6Pt0d8Fc',
-  // Official Mini App URL from environment or standard cloud run deployment URL
-  miniAppUrl: (typeof process !== 'undefined' && process.env?.APP_URL)
-    ? process.env.APP_URL
-    : 'https://ais-dev-lrtgdr525axvlu57yhwoyz-623708054516.europe-west2.run.app',
+  token: '8922397289:AAFD98D2yMvOsSC7N_OsedfYAZL_nMAOuLc',
+  botUsername: 'NoahMontane_Bot',
+  botName: 'Noah Montane',
+  botUrl: 'https://t.me/NoahMontane_Bot',
+  apiUrl: 'https://api.telegram.org/bot8922397289:AAFD98D2yMvOsSC7N_OsedfYAZL_nMAOuLc',
+  // Official Mini App URL
+  miniAppUrl: 'https://perk-vibe.vercel.app/',
 };
 
 /**
@@ -121,13 +119,14 @@ export async function handleTelegramUpdate(update: any): Promise<void> {
 
   // Detect /start or /start <payload>
   if (text === '/start' || text.startsWith('/start ') || text.startsWith('/start@')) {
+    console.log(`[Telegram Bot] Handling /start command for chat ID: ${chatId}`);
     await sendStartWelcomeMessage(chatId);
   }
 }
 
 /**
  * Background polling loop for node / server execution.
- * Ensures /start is answered in real-time even without external webhook routing.
+ * Ensures /start is answered in real-time.
  */
 let isPollingActive = false;
 let lastUpdateId = 0;
@@ -136,7 +135,7 @@ export async function startLongPolling(): Promise<void> {
   if (isPollingActive) return;
   isPollingActive = true;
 
-  console.log('[Telegram Bot] Starting long polling service for TRICHOMES LAB...');
+  console.log('[Telegram Bot] Starting long polling service for @NoahMontane_Bot (TRICHOMES LAB)...');
 
   const poll = async () => {
     while (isPollingActive) {

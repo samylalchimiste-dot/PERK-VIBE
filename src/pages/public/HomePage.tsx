@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ShoppingBag, PlusCircle, Sparkles } from 'lucide-react';
+import { ChevronDown, ShoppingBag } from 'lucide-react';
 import { Product, Category, BrandSettings } from '../../types';
 import { 
   subscribeProducts, 
@@ -16,6 +16,7 @@ import { ProductCard } from '../../components/public/ProductCard';
 import { CategoryFilterBar } from '../../components/public/CategoryFilterBar';
 import { getTelegramUser, hapticFeedback } from '../../services/telegram/telegramService';
 import { playClickSound } from '../../services/audio/soundService';
+import { useTapCounter } from '../../hooks/useTapCounter';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,11 @@ export const HomePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedFarm, setSelectedFarm] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(true);
+
+  // 5 taps on the hero title opens secret admin access
+  const { handleTap: handleHeroSecretTap } = useTapCounter(5, 4000, () => {
+    window.dispatchEvent(new CustomEvent('open-secret-admin'));
+  });
 
   // Retrieve Telegram user info or default to 'Yory' as seen in Screenshot 1
   const tgUser = useMemo(() => {
@@ -173,7 +179,8 @@ export const HomePage: React.FC = () => {
 
           {/* Giant Stencil / Block Typography: TRICOME / LAB */}
           <div 
-            className="font-black text-4xl sm:text-5xl uppercase tracking-wider text-white leading-[0.92] my-2 select-none z-10 drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)]"
+            onClick={handleHeroSecretTap}
+            className="font-black text-4xl sm:text-5xl uppercase tracking-wider text-white leading-[0.92] my-2 select-none z-10 drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)] cursor-pointer active:scale-95 transition-transform"
             style={{ fontFamily: "'Bebas Neue', 'Montserrat', sans-serif" }}
           >
             <div className="tracking-[0.12em] text-zinc-100">TRICOME</div>
@@ -289,17 +296,17 @@ export const HomePage: React.FC = () => {
                   <h3 className="font-bold text-sm text-zinc-100">
                     {selectedCategory !== 'ALL' || selectedFarm !== 'ALL'
                       ? 'Aucun produit dans cette sélection'
-                      : 'Catalogue TRICOME LAB vide (0 produit)'}
+                      : 'Catalogue TRICOME LAB'}
                   </h3>
                   <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
                     {selectedCategory !== 'ALL' || selectedFarm !== 'ALL'
                       ? 'Changez de catégorie ou réinitialisez le filtre.'
-                      : 'Tous les produits de test ont été définitivement retirés. Vous pouvez ajouter vos véritables extractions depuis le panneau Admin.'}
+                      : 'Nouveaux arrivages disponibles très prochainement.'}
                   </p>
                 </div>
 
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
-                  {selectedCategory !== 'ALL' || selectedFarm !== 'ALL' ? (
+                {(selectedCategory !== 'ALL' || selectedFarm !== 'ALL') && (
+                  <div className="pt-2 flex items-center justify-center">
                     <button
                       type="button"
                       onClick={() => {
@@ -311,21 +318,8 @@ export const HomePage: React.FC = () => {
                     >
                       Réinitialiser les filtres
                     </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        hapticFeedback('medium');
-                        playClickSound();
-                        navigate('/admin/products');
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-black transition shadow-[0_0_15px_rgba(251,191,36,0.4)]"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Ajouter un produit réel (Admin)</span>
-                    </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </section>

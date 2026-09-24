@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MoreHorizontal, Shield, Volume2, VolumeX, RotateCw, ExternalLink } from 'lucide-react';
+import { ChevronLeft, MoreHorizontal, Volume2, VolumeX, RotateCw } from 'lucide-react';
 import { isTelegramWebApp, closeTelegramWebApp, hapticFeedback } from '../../services/telegram/telegramService';
 import { isSoundEnabled, setSoundEnabled, initSoundState, playClickSound } from '../../services/audio/soundService';
 import { useTapCounter } from '../../hooks/useTapCounter';
@@ -24,14 +24,22 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 5 taps on the title opens secret admin access
-  const { handleTap: handleHeaderSecretTap } = useTapCounter(5, 3000, () => {
+  const { handleTap: handleHeaderSecretTap } = useTapCounter(5, 4000, () => {
     setIsSecretAdminOpen(true);
   });
 
   useEffect(() => {
     setSoundOn(initSoundState());
     const unsub = subscribeBrandSettings(setBrand);
-    return () => unsub();
+    
+    // Listen for custom trigger from any other "TRICOME LAB" top title element
+    const handleCustomTrigger = () => setIsSecretAdminOpen(true);
+    window.addEventListener('open-secret-admin', handleCustomTrigger);
+
+    return () => {
+      unsub();
+      window.removeEventListener('open-secret-admin', handleCustomTrigger);
+    };
   }, []);
 
   // Close dropdown on click outside
@@ -101,11 +109,10 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
             )}
           </div>
 
-          {/* Center: Brand Name or Title */}
+          {/* Center: Brand Name or Title - 5 taps to open secret admin access */}
           <div
             onClick={handleHeaderSecretTap}
-            className="flex flex-col items-center justify-center cursor-pointer select-none px-2"
-            title="Taper 5 fois pour ouvrir l'accès Admin"
+            className="flex flex-col items-center justify-center cursor-pointer select-none px-2 active:scale-95 transition-transform"
           >
             {title ? (
               <span className="font-bold text-xs tracking-wider text-zinc-200 uppercase truncate max-w-[180px]">
@@ -136,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
               <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
 
-            {/* Header Popup Dropdown */}
+            {/* Header Popup Dropdown (Sound & Reload only, NO admin access) */}
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-[#090d16] border border-amber-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.9)] py-1.5 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
                 <button
@@ -164,21 +171,6 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
                 >
                   <RotateCw className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Recharger la page</span>
-                </button>
-
-                <div className="h-px bg-zinc-800 my-1" />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    hapticFeedback('medium');
-                    setIsMenuOpen(false);
-                    setIsSecretAdminOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-amber-400 hover:bg-amber-950/30 transition"
-                >
-                  <Shield className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Accès Administrateur</span>
                 </button>
               </div>
             )}
