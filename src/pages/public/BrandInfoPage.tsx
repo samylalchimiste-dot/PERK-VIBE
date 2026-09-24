@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, MessageCircle, ShieldCheck, Sparkles, Award, Clock, Store } from 'lucide-react';
 import { BrandSettings } from '../../types';
 import { subscribeBrandSettings, DEFAULT_BRAND_SETTINGS } from '../../services/firebase/catalog';
+import { resolveMediaUrl } from '../../services/firebase/mediaStore';
 import { Header } from '../../components/common/Header';
 import { BottomNav } from '../../components/common/BottomNav';
 import { BrandCrestLogo } from '../../components/common/BrandCrestLogo';
@@ -10,9 +11,28 @@ import { playClickSound } from '../../services/audio/soundService';
 
 export const BrandInfoPage: React.FC = () => {
   const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND_SETTINGS);
+  const [resolvedCover, setResolvedCover] = useState<string>('');
+  const [resolvedProfile, setResolvedProfile] = useState<string>('');
 
   useEffect(() => {
-    const unsub = subscribeBrandSettings(setBrand);
+    const unsub = subscribeBrandSettings((settings) => {
+      setBrand(settings);
+      if (settings.coverImage) {
+        resolveMediaUrl(settings.coverImage)
+          .then((url) => setResolvedCover(url))
+          .catch(() => setResolvedCover(settings.coverImage));
+      } else {
+        setResolvedCover('');
+      }
+
+      if (settings.profileImage) {
+        resolveMediaUrl(settings.profileImage)
+          .then((url) => setResolvedProfile(url))
+          .catch(() => setResolvedProfile(settings.profileImage));
+      } else {
+        setResolvedProfile('');
+      }
+    });
     return () => unsub();
   }, []);
 
@@ -38,17 +58,28 @@ export const BrandInfoPage: React.FC = () => {
 
         {/* Brand Banner Hero */}
         <div className="relative rounded-3xl overflow-hidden bg-[#0c1322] border border-cyan-900/40 p-6 text-center space-y-3.5 shadow-lg">
-          <div className="relative mx-auto flex items-center justify-center">
-            {brand.profileImage ? (
+          {resolvedCover && (
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <img
+                src={resolvedCover}
+                alt="Brand Cover"
+                className="w-full h-full object-cover object-center filter brightness-50"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0c1322]/80 via-[#0c1322]/90 to-[#0c1322]" />
+            </div>
+          )}
+
+          <div className="relative z-10 mx-auto flex items-center justify-center">
+            {(resolvedProfile || brand.profileImage) ? (
               <div className="w-20 h-20 rounded-2xl mx-auto p-1 bg-[#090d16] border border-amber-500/40 overflow-hidden shadow-2xl flex items-center justify-center">
-                <img src={brand.profileImage} alt={brand.brandName} className="w-full h-full object-cover rounded-xl" />
+                <img src={resolvedProfile || brand.profileImage} alt={brand.brandName} className="w-full h-full object-cover rounded-xl" />
               </div>
             ) : (
               <BrandCrestLogo size="lg" showGlow={true} />
             )}
           </div>
 
-          <div>
+          <div className="relative z-10">
             <span className="text-[10px] font-mono tracking-widest uppercase text-amber-400">
               Connoisseur Farm & Top-Shelf Extractions
             </span>

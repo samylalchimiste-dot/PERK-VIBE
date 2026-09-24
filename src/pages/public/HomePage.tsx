@@ -8,6 +8,7 @@ import {
   subscribeBrandSettings, 
   DEFAULT_BRAND_SETTINGS 
 } from '../../services/firebase/catalog';
+import { resolveMediaUrl } from '../../services/firebase/mediaStore';
 import { Header } from '../../components/common/Header';
 import { BottomNav } from '../../components/common/BottomNav';
 import { BrandCrestLogo } from '../../components/common/BrandCrestLogo';
@@ -20,6 +21,8 @@ export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const catalogSectionRef = useRef<HTMLDivElement>(null);
   const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND_SETTINGS);
+  const [resolvedCover, setResolvedCover] = useState<string>('');
+  const [resolvedProfile, setResolvedProfile] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -37,7 +40,25 @@ export const HomePage: React.FC = () => {
 
   // Real-time subscriptions
   useEffect(() => {
-    const unsubBrand = subscribeBrandSettings(setBrand);
+    const unsubBrand = subscribeBrandSettings((settings) => {
+      setBrand(settings);
+      if (settings.coverImage) {
+        resolveMediaUrl(settings.coverImage)
+          .then((url) => setResolvedCover(url))
+          .catch(() => setResolvedCover(settings.coverImage));
+      } else {
+        setResolvedCover('');
+      }
+
+      if (settings.profileImage) {
+        resolveMediaUrl(settings.profileImage)
+          .then((url) => setResolvedProfile(url))
+          .catch(() => setResolvedProfile(settings.profileImage));
+      } else {
+        setResolvedProfile('');
+      }
+    });
+
     const unsubProducts = subscribeProducts((prods) => {
       setProducts(prods);
       setIsLoading(false);
@@ -84,17 +105,44 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050608] text-zinc-100 flex flex-col pb-28 selection:bg-amber-900/60 selection:text-amber-200">
+    <div className="relative min-h-screen bg-[#050608] text-zinc-100 flex flex-col pb-28 selection:bg-amber-900/60 selection:text-amber-200 overflow-x-hidden">
+      {/* Full Page Ambient Cover Image Backdrop */}
+      {resolvedCover && (
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <img
+            src={resolvedCover}
+            alt="Page Ambient Background"
+            className="w-full h-full object-cover object-center filter blur-xl scale-110 opacity-30"
+          />
+          <div className="absolute inset-0 bg-[#050608]/85" />
+          <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#050608]/60 to-[#050608]" />
+        </div>
+      )}
+
       {/* 1. TOP HEADER (Matching Screenshot 1) */}
       <Header />
 
-      <main className="max-w-md mx-auto px-3.5 pt-2 flex-1 w-full space-y-4">
+      <main className="relative z-10 max-w-md mx-auto px-3.5 pt-2 flex-1 w-full space-y-4">
         {/* ========================================================================= */}
         {/* 2. HERO SECTION — EXACT VISUAL IDENTITY OF SCREENSHOT 1                   */}
         {/* ========================================================================= */}
-        <section className="relative pt-2 pb-4 flex flex-col items-center text-center overflow-hidden">
+        <section className="relative pt-6 pb-6 px-4 rounded-3xl flex flex-col items-center text-center overflow-hidden border border-amber-500/20 shadow-2xl bg-zinc-950">
+          {/* Real Background Cover Image from Brand Settings */}
+          {resolvedCover && (
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <img
+                src={resolvedCover}
+                alt="Background Cover"
+                className="w-full h-full object-cover object-center scale-105 filter brightness-75 contrast-110"
+              />
+              {/* Luxury dark gradient fade overlay ensuring text & gold elements pop */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#050608]/75 via-[#050608]/85 to-[#050608]" />
+              <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#050608]/60 to-[#050608]/95" />
+            </div>
+          )}
+
           {/* Cybernetic Tech Halo Background Rings */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 pointer-events-none opacity-40">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 pointer-events-none opacity-40 z-1">
             <div className="w-full h-full rounded-full border border-amber-500/20 animate-[spin_40s_linear_infinite]" />
             <div className="absolute inset-8 rounded-full border border-dashed border-amber-400/25 animate-[spin_25s_linear_infinite_reverse]" />
             <div className="absolute inset-16 rounded-full border border-amber-500/30" />
@@ -103,10 +151,10 @@ export const HomePage: React.FC = () => {
 
           {/* Centered Brand Crest Logo (Robot helmet / Connoisseur shield in golden rings) */}
           <div className="relative z-10 mb-2">
-            {brand.profileImage ? (
+            {(resolvedProfile || brand.profileImage) ? (
               <div className="w-24 h-24 rounded-full p-1 border-2 border-amber-400/80 shadow-[0_0_30px_rgba(251,191,36,0.4)] overflow-hidden bg-zinc-950">
                 <img
-                  src={brand.profileImage}
+                  src={resolvedProfile || brand.profileImage}
                   alt={brand.brandName || 'TRICOME LAB'}
                   className="w-full h-full object-cover rounded-full"
                 />

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles, Send } from 'lucide-react';
 import { BrandSettings } from '../../types';
 import { hapticFeedback } from '../../services/telegram/telegramService';
 import { playClickSound } from '../../services/audio/soundService';
+import { resolveMediaUrl } from '../../services/firebase/mediaStore';
 
 interface BrandHeroProps {
   brand: BrandSettings;
@@ -12,6 +13,26 @@ interface BrandHeroProps {
 
 export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) => {
   const navigate = useNavigate();
+  const [resolvedCover, setResolvedCover] = useState<string>(brand.coverImage || '');
+  const [resolvedProfile, setResolvedProfile] = useState<string>(brand.profileImage || '');
+
+  useEffect(() => {
+    if (brand.coverImage) {
+      resolveMediaUrl(brand.coverImage)
+        .then((url) => setResolvedCover(url))
+        .catch(() => setResolvedCover(brand.coverImage));
+    } else {
+      setResolvedCover('');
+    }
+
+    if (brand.profileImage) {
+      resolveMediaUrl(brand.profileImage)
+        .then((url) => setResolvedProfile(url))
+        .catch(() => setResolvedProfile(brand.profileImage));
+    } else {
+      setResolvedProfile('');
+    }
+  }, [brand.coverImage, brand.profileImage]);
 
   const handleExplore = () => {
     hapticFeedback('medium');
@@ -33,9 +54,9 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
     <div className="relative w-full overflow-hidden rounded-3xl bg-zinc-950 border border-zinc-800/80 shadow-2xl">
       {/* Cover Background Image with Dark Luxury Vignette */}
       <div className="relative h-64 sm:h-72 w-full overflow-hidden">
-        {brand.coverImage ? (
+        {resolvedCover ? (
           <img
-            src={brand.coverImage}
+            src={resolvedCover}
             alt={brand.brandName}
             className="w-full h-full object-cover object-center transform scale-105 transition-transform duration-1000 ease-out"
           />
@@ -76,9 +97,9 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
         <div className="relative mb-3.5 group">
           <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-b from-zinc-600 via-zinc-800 to-zinc-950 shadow-2xl">
             <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-              {brand.profileImage ? (
+              {(resolvedProfile || brand.profileImage) ? (
                 <img
-                  src={brand.profileImage}
+                  src={resolvedProfile || brand.profileImage}
                   alt={brand.brandName}
                   className="w-full h-full object-cover rounded-full transition-transform duration-500 group-hover:scale-105"
                 />

@@ -1063,7 +1063,7 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="bg-[#111114] p-5 rounded-3xl border border-zinc-800/80 space-y-6">
             <div>
               <h2 className="text-base font-extrabold uppercase tracking-tight text-white">
-                Identité Visuelle & Boutique PERK VIBES FARMZ
+                Identité Visuelle & Boutique TRICOME LAB
               </h2>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Configurez la photo de profil, la bannière d'arrière-plan, les textes et les liens officiels.
