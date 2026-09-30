@@ -25,20 +25,20 @@ export const BRAND_SETTINGS_DOC_ID = 'main';
 // Default STATIC GEM Brand Settings
 export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
   brandName: 'STATIC GEM',
-  tagline: 'Connoisseur Farm & Top-Shelf Extractions',
-  description: 'Sélection exclusive de filtrations d\'exception : Dry Sift de précision, Frozen Sift cryogénique et 2x Static 99% trichome heads.',
-  profileImage: '',
+  tagline: 'Connoisseur Farm · 3x Static & WPFF',
+  description: 'Sélection exclusive de filtrations d\'exception : 3x Static et WPFF.',
+  profileImage: '/static_gem_welcome.jpg',
   coverImage: '',
   currency: '€',
   heroCtaText: 'Explorer le Menu',
   badgeText: 'Collection 2026',
   contactLinks: {
-    telegram: 'https://t.me/TricomeLab_Bot',
-    botUsername: 'TricomeLab_Bot',
-    botUrl: 'https://t.me/TricomeLab_Bot',
+    telegram: 'https://t.me/StaticGem_Bot',
+    botUsername: 'StaticGem_Bot',
+    botUrl: 'https://t.me/StaticGem_Bot',
     whatsapp: '',
     instagram: '@staticgem',
-    channel: 'https://t.me/TricomeLab_Bot',
+    channel: 'https://t.me/StaticGem_Bot',
   },
 };
 
@@ -65,18 +65,24 @@ export function subscribeBrandSettings(callback: (settings: BrandSettings) => vo
           data.brandName.includes('Cartel') ||
           data.brandName !== 'STATIC GEM';
 
-        if (isOldName) {
+        const hasOldCategories = 
+          (data.tagline && (data.tagline.includes('Dry') || data.tagline.includes('Frozen') || data.tagline.includes('2x') || data.tagline.includes('2X'))) ||
+          (data.description && (data.description.includes('Dry') || data.description.includes('Frozen') || data.description.includes('2x') || data.description.includes('2X')));
+
+        if (isOldName || hasOldCategories) {
           updateDoc(docRef, {
             brandName: 'STATIC GEM',
+            tagline: DEFAULT_BRAND_SETTINGS.tagline,
+            description: DEFAULT_BRAND_SETTINGS.description,
             updatedAt: serverTimestamp(),
-          }).catch((err) => console.warn('Could not auto-migrate brandName:', err));
+          }).catch((err) => console.warn('Could not auto-migrate brand settings:', err));
         }
         callback({
           ...DEFAULT_BRAND_SETTINGS,
           ...data,
           brandName: isOldName ? 'STATIC GEM' : data.brandName,
-          tagline: isOldName ? DEFAULT_BRAND_SETTINGS.tagline : (data.tagline || DEFAULT_BRAND_SETTINGS.tagline),
-          description: isOldName ? DEFAULT_BRAND_SETTINGS.description : (data.description || DEFAULT_BRAND_SETTINGS.description),
+          tagline: (isOldName || hasOldCategories) ? DEFAULT_BRAND_SETTINGS.tagline : (data.tagline || DEFAULT_BRAND_SETTINGS.tagline),
+          description: (isOldName || hasOldCategories) ? DEFAULT_BRAND_SETTINGS.description : (data.description || DEFAULT_BRAND_SETTINGS.description),
           contactLinks: {
             ...DEFAULT_BRAND_SETTINGS.contactLinks,
             ...(data.contactLinks || {}),
@@ -116,7 +122,7 @@ export async function updateBrandSettings(settings: Partial<BrandSettings>): Pro
 }
 
 // ==========================================
-// CATEGORIES API (DRY SIFT / FROZEN SIFT / 2X STATIC)
+// CATEGORIES API (3X STATIC / WPFF)
 // ==========================================
 
 export function subscribeCategories(callback: (categories: Category[]) => void): () => void {
@@ -566,24 +572,20 @@ export async function purgeAllProductsAndCategories(): Promise<{ deletedProds: n
 }
 
 export const CANONICAL_CATEGORIES = [
-  { name: '2X STATIC', slug: '2x-static', order: 1, description: 'Double purification électrostatique ultra pure' },
+  { name: '3X STATIC', slug: '3x-static', order: 1, description: 'Triple purification électrostatique ultra pure' },
   { name: 'WPFF', slug: 'wpff', order: 2, description: 'Whole Plant Fresh Frozen Live Rosin' },
-  { name: 'DRY SIFT', slug: 'dry-sift', order: 3, description: 'Dry Sift traditionnel de précision & tamisage fin' },
-  { name: 'FROZEN SIFT', slug: 'frozen-sift', order: 4, description: 'Frozen Sift extractions cryogéniques' },
 ];
 
 export function normalizeCategoryName(raw: string): string | null {
   const upper = raw.toUpperCase().trim();
-  if (upper.includes('STATIC') || upper === '2X STATIC') return '2X STATIC';
+  if (upper.includes('STATIC') || upper === '3X STATIC' || upper === '2X STATIC') return '3X STATIC';
   if (upper.includes('WPFF') || upper.includes('WPPF')) return 'WPFF';
-  if (upper.includes('DRY SIFT') || upper === 'DRY') return 'DRY SIFT';
-  if (upper.includes('FROZEN SIFT') || upper === 'FROZEN') return 'FROZEN SIFT';
   return null;
 }
 
 /**
- * Ensures ONLY the 4 canonical categories (2X STATIC, WPFF, DRY SIFT, FROZEN SIFT) exist without duplicates.
- * Removes old "Dry", "Frozen", clothing or other obsolete categories.
+ * Ensures ONLY the 2 canonical categories (3X STATIC, WPFF) exist without duplicates.
+ * Removes old "Dry Sift", "Frozen Sift", clothing or other obsolete categories.
  */
 export async function ensureCanonicalCategories(): Promise<void> {
   try {

@@ -46,7 +46,7 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
 
   const handleTelegramContact = () => {
     hapticFeedback('light');
-    const targetUrl = brand.contactLinks.botUrl || brand.contactLinks.telegram || 'https://t.me/TricomeLab_Bot';
+    const targetUrl = brand.contactLinks.botUrl || brand.contactLinks.telegram || 'https://t.me/StaticGem_Bot';
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -124,7 +124,7 @@ export const BrandHero: React.FC<BrandHeroProps> = ({ brand, onExploreClick }) =
 
         {/* Tagline */}
         <p className="text-xs sm:text-sm font-medium tracking-wide text-zinc-400 max-w-sm mb-2">
-          {brand.tagline || 'Extractions d\'Élite · 2x Static, Frozen Sift & Dry Sift'}
+          {brand.tagline || 'Extractions d\'Élite · 3x Static & WPFF'}
         </p>
 
         {/* Description */}

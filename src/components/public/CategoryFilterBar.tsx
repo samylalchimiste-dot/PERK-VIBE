@@ -40,20 +40,18 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Canonical categories strictly requested by user: 2X STATIC, WPFF, DRY SIFT, FROZEN SIFT
-  const canonicalOrder = ['2X STATIC', 'WPFF', 'DRY SIFT', 'FROZEN SIFT'];
+  // Canonical categories strictly requested by user: 3X STATIC, WPFF
+  const canonicalOrder = ['3X STATIC', 'WPFF'];
 
   const uniqueCategories = React.useMemo(() => {
     const list: Array<{ id: string; name: string }> = [];
 
-    // Map each of the 4 canonical categories strictly once
+    // Map canonical categories strictly once
     for (const canon of canonicalOrder) {
       const match = categories.find((c) => {
         const n = (c.name || '').toUpperCase().trim();
-        if (canon === '2X STATIC') return n.includes('STATIC');
+        if (canon === '3X STATIC') return n.includes('STATIC');
         if (canon === 'WPFF') return n.includes('WPFF') || n.includes('WPPF');
-        if (canon === 'DRY SIFT') return n === 'DRY SIFT' || n === 'DRY';
-        if (canon === 'FROZEN SIFT') return n === 'FROZEN SIFT' || n === 'FROZEN';
         return false;
       });
 
@@ -87,10 +85,8 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
     return (
       selectedCategory === catId ||
       selectedCategory.toLowerCase() === catName.toLowerCase() ||
-      (catName === '2X STATIC' && selectedCategory.toLowerCase().includes('static')) ||
-      (catName === 'WPFF' && (selectedCategory.toLowerCase().includes('wpff') || selectedCategory.toLowerCase().includes('wppf'))) ||
-      (catName === 'DRY SIFT' && selectedCategory.toLowerCase().includes('dry')) ||
-      (catName === 'FROZEN SIFT' && selectedCategory.toLowerCase().includes('frozen'))
+      (catName === '3X STATIC' && selectedCategory.toLowerCase().includes('static')) ||
+      (catName === 'WPFF' && (selectedCategory.toLowerCase().includes('wpff') || selectedCategory.toLowerCase().includes('wppf')))
     );
   };
 
@@ -233,7 +229,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
         </div>
       </div>
 
-      {/* HORIZONTAL CATEGORY FILTER BAR: [ Toutes ] [ 2X STATIC ] [ WPFF ] [ DRY SIFT ] [ FROZEN SIFT ] */}
+      {/* HORIZONTAL CATEGORY FILTER BAR: [ Toutes ] [ 3X STATIC ] [ WPFF ] */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth">
         {/* "Toutes" Pill */}
         <button
@@ -248,7 +244,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
           Toutes
         </button>
 
-        {/* 4 Canonical Categories: 2X STATIC, WPFF, DRY SIFT, FROZEN SIFT */}
+        {/* 2 Canonical Categories: 3X STATIC, WPFF */}
         {uniqueCategories.map((cat) => {
           const active = isCatActive(cat.id, cat.name);
           return (

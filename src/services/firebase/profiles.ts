@@ -542,11 +542,11 @@ export async function seedDemonstrationProfiles(): Promise<void> {
     {
       name: 'PERK VIBES HQ',
       username: 'perkvibes_hq',
-      description: 'Menu officiel certifié Perk Vibes Farmz. Top-shelf 2x Static, Frozen Sift et Dry Sift cures d\'exception.',
+      description: 'Menu officiel certifié STATIC GEM. Top-shelf 3x Static et WPFF extractions d\'exception.',
       country: 'France',
       city: 'Paris',
       region: 'Paris IDF',
-      category: '2x STATIC',
+      category: '3x STATIC',
       featured: true,
       votes: 128,
       badge: 'N°1 Farmz',

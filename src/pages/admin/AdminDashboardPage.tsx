@@ -120,7 +120,7 @@ export const AdminDashboardPage: React.FC = () => {
         const success = await resetAndSeedPerkVibesFarmz(true);
         hapticFeedback('heavy');
         if (success) {
-          showNotice('Catalogue Farmz réinitialisé avec succès (DRY SIFT, FROZEN SIFT, 2x STATIC) !');
+          showNotice('Catalogue réinitialisé avec succès (3x STATIC, WPFF) !');
         } else {
           showNotice('Erreur lors de la réinitialisation', 'error');
         }
@@ -684,7 +684,7 @@ export const AdminDashboardPage: React.FC = () => {
             Gestion du Menu · STATIC GEM
           </h1>
           <p className="text-xs text-zinc-400 font-mono mt-0.5">
-            Gérez vos produits (Dry Sift, Frozen Sift, 2x Static), stocks et identité.
+            Gérez vos produits (3x Static, WPFF), stocks et identité.
           </p>
         </div>
 
@@ -1363,24 +1363,24 @@ export const AdminDashboardPage: React.FC = () => {
                   </span>
                   <span className="text-[10px] text-zinc-400">Pré-remplit catégorie et caractéristiques</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       const cat = categories.find((c) => c.name.toUpperCase().includes('STATIC')) || categories[0];
                       if (cat) setProdFormCategory(cat.id);
                       setProdFormDetails([
-                        { key: 'Filtration', value: '2x Static 99% Pure Heads' },
+                        { key: 'Filtration', value: '3x Static 99% Pure Heads' },
                         { key: 'Profil Terpénique', value: 'Heavy Gas & Sweet Candy' },
                         { key: 'Texture', value: 'Glassy Full Melt' },
                         { key: 'Origine', value: 'STATIC GEM' },
                       ]);
-                      if (!prodFormName) setProdFormName('Gelato 33 2x Static');
+                      if (!prodFormName) setProdFormName('Gelato 33 3x Static');
                       hapticFeedback('medium');
                     }}
                     className="p-2 rounded-xl bg-purple-950/40 border border-purple-500/30 hover:bg-purple-900/40 text-purple-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
                   >
-                    <span>⚡ 2X STATIC</span>
+                    <span>⚡ 3X STATIC</span>
                   </button>
 
                   <button
@@ -1401,44 +1401,6 @@ export const AdminDashboardPage: React.FC = () => {
                   >
                     <span>💧 WPFF</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cat = categories.find((c) => c.name.toUpperCase().includes('DRY')) || categories[0];
-                      if (cat) setProdFormCategory(cat.id);
-                      setProdFormDetails([
-                        { key: 'Filtration', value: '90u - 120u Traditionnel' },
-                        { key: 'Profil Terpénique', value: 'Terreux & Épicé / Piquant' },
-                        { key: 'Texture', value: 'Sable Doré affiné' },
-                        { key: 'Origine', value: 'STATIC GEM' },
-                      ]);
-                      if (!prodFormName) setProdFormName('Kosher Kush Dry Sift 120u');
-                      hapticFeedback('medium');
-                    }}
-                    className="p-2 rounded-xl bg-amber-950/40 border border-amber-500/30 hover:bg-amber-900/40 text-amber-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
-                  >
-                    <span>🌾 DRY SIFT</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cat = categories.find((c) => c.name.toUpperCase().includes('FROZEN')) || categories[0];
-                      if (cat) setProdFormCategory(cat.id);
-                      setProdFormDetails([
-                        { key: 'Filtration', value: '73u - 90u Cryogénique' },
-                        { key: 'Profil Terpénique', value: 'Fresh Frozen Terps Fruité' },
-                        { key: 'Texture', value: 'Cold Cure Bader' },
-                        { key: 'Origine', value: 'STATIC GEM' },
-                      ]);
-                      if (!prodFormName) setProdFormName('Tangie Papaya Frozen Sift 90u');
-                      hapticFeedback('medium');
-                    }}
-                    className="p-2 rounded-xl bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/40 text-cyan-300 font-bold text-[11px] flex items-center justify-center gap-1 transition"
-                  >
-                    <span>❄️ FROZEN SIFT</span>
-                  </button>
                 </div>
               </div>
 
@@ -1455,7 +1417,7 @@ export const AdminDashboardPage: React.FC = () => {
                       setProdFormName(e.target.value);
                       if (formError) setFormError(null);
                     }}
-                    placeholder="Ex: Wedding Cake x Gelato 33 2x Static ou Tangie Papaya 90u"
+                    placeholder="Ex: Wedding Cake x Gelato 33 3x Static ou Tangie Papaya 90u"
                     required
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs"
                   />
@@ -1472,9 +1434,8 @@ export const AdminDashboardPage: React.FC = () => {
                   >
                     {categories.length === 0 ? (
                       <>
-                        <option value="cat_dry">DRY SIFT</option>
-                        <option value="cat_frozen">FROZEN SIFT</option>
-                        <option value="cat_static">2X STATIC</option>
+                        <option value="cat_static">3X STATIC</option>
+                        <option value="cat_wpff">WPFF</option>
                       </>
                     ) : (
                       categories.map((c) => (
@@ -1996,7 +1957,7 @@ export const AdminDashboardPage: React.FC = () => {
                   type="text"
                   value={catFormName}
                   onChange={(e) => setCatFormName(e.target.value)}
-                  placeholder="Ex: 2x STATIC, FROZEN SIFT, DRY SIFT..."
+                  placeholder="Ex: 3x STATIC, WPFF..."
                   required
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-zinc-500"
                 />
@@ -2091,7 +2052,7 @@ export const AdminDashboardPage: React.FC = () => {
                   {itemToDelete.type === 'category' && itemToDelete.category?.name}
                   {itemToDelete.type === 'all_products' && 'Effacement complet de tous les produits'}
                   {itemToDelete.type === 'purge_old' && 'Suppression des anciens produits hors menu'}
-                  {itemToDelete.type === 'reseed_farmz' && 'Installation DRY SIFT, FROZEN SIFT, 2x STATIC'}
+                  {itemToDelete.type === 'reseed_farmz' && 'Installation 3x STATIC, WPFF'}
                 </p>
               </div>
             </div>
@@ -2101,7 +2062,7 @@ export const AdminDashboardPage: React.FC = () => {
               {itemToDelete.type === 'category' && 'Cette catégorie sera retirée de la navigation. Les produits rattachés ne seront pas supprimés.'}
               {itemToDelete.type === 'all_products' && 'ATTENTION : Tous les produits actuels du catalogue vont être supprimés de la base de données. Vous pourrez ensuite ajouter vos propres produits ou recharger le menu Farmz.'}
               {itemToDelete.type === 'purge_old' && 'Tous les anciens articles hors menu d\'extractions seront définitivement purgés.'}
-              {itemToDelete.type === 'reseed_farmz' && 'Les anciens articles seront purgés et remplacés par les 3 catégories officielles (DRY SIFT, FROZEN SIFT, 2x STATIC) et les 9 extractions Perk Vibes Farmz.'}
+              {itemToDelete.type === 'reseed_farmz' && 'Les anciens articles seront purgés et remplacés par les catégories officielles (3x STATIC, WPFF) et les extractions STATIC GEM.'}
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">

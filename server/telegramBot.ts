@@ -1,6 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 /**
  * Telegram Bot Configuration & Web App Integration
- * Bot: STATIC GEM (@TricomeLab_Bot)
+ * Bot: STATIC GEM (@StaticGem_Bot)
  * Dedicated for STATIC GEM
  */
 
@@ -8,9 +11,9 @@ export const TELEGRAM_BOT_CONFIG = {
   get token(): string {
     return (typeof process !== 'undefined' && process.env?.TELEGRAM_BOT_TOKEN) || '';
   },
-  botUsername: 'TricomeLab_Bot',
+  botUsername: 'StaticGem_Bot',
   botName: 'STATIC GEM',
-  botUrl: 'https://t.me/TricomeLab_Bot',
+  botUrl: 'https://t.me/StaticGem_Bot',
   get apiUrl(): string {
     const t = this.token;
     return t ? `https://api.telegram.org/bot${t}` : '';
@@ -185,6 +188,49 @@ export async function sendTelegramBotMessage(
 }
 
 /**
+ * Sends a photo message with caption, parse mode and inline keyboard to a Telegram chat.
+ * Tries local image file first (multipart/form-data), then falls back to sendTelegramBotMessage if unavailable.
+ */
+export async function sendTelegramBotPhoto(
+  chatId: string | number,
+  imageRelativePath: string,
+  caption: string,
+  parseMode: 'HTML' | 'Markdown' = 'HTML',
+  replyMarkup?: { inline_keyboard?: TelegramInlineKeyboardButton[][] }
+): Promise<boolean> {
+  try {
+    const resolvedPath = path.resolve(process.cwd(), imageRelativePath);
+    if (fs.existsSync(resolvedPath)) {
+      const buffer = fs.readFileSync(resolvedPath);
+      const form = new FormData();
+      form.append('chat_id', String(chatId));
+      form.append('photo', new Blob([buffer], { type: 'image/jpeg' }), 'static_gem_welcome.jpg');
+      form.append('caption', caption);
+      form.append('parse_mode', parseMode);
+      if (replyMarkup) {
+        form.append('reply_markup', JSON.stringify(replyMarkup));
+      }
+
+      const res = await fetch(`${TELEGRAM_BOT_CONFIG.apiUrl}/sendPhoto`, {
+        method: 'POST',
+        body: form,
+      });
+
+      const data = await res.json();
+      if (data.ok) {
+        return true;
+      }
+      console.warn('[Telegram Bot] sendPhoto returned non-ok:', data);
+    }
+  } catch (err) {
+    console.warn('[Telegram Bot] Error in sendTelegramBotPhoto, falling back to text:', err);
+  }
+
+  // Graceful fallback to text if photo cannot be dispatched
+  return sendTelegramBotMessage(chatId, caption, parseMode, replyMarkup);
+}
+
+/**
  * Deletes a single message from a chat via Telegram Bot API deleteMessage.
  */
 export async function deleteTelegramMessage(
@@ -343,7 +389,7 @@ export async function banChatSender(
 }
 
 /**
- * Sends the official /start welcome message with the Mini App inline button.
+ * Sends the official /start welcome message with the official STATIC GEM photo emblem and the Mini App inline button.
  */
 export async function sendStartWelcomeMessage(chatId: string | number): Promise<boolean> {
   const miniAppUrl = TELEGRAM_BOT_CONFIG.miniAppUrl;
@@ -361,8 +407,9 @@ export async function sendStartWelcomeMessage(chatId: string | number): Promise<
     ],
   };
 
-  return sendTelegramBotMessage(
+  return sendTelegramBotPhoto(
     chatId,
+    'public/static_gem_welcome.jpg',
     TELEGRAM_START_RESPONSE.text,
     'HTML',
     replyMarkup
@@ -469,7 +516,7 @@ export async function startLongPolling(): Promise<void> {
   if (isPollingActive) return;
   isPollingActive = true;
 
-  console.log('[Telegram Bot] Starting long polling service for @TricomeLab_Bot (STATIC GEM)...');
+  console.log('[Telegram Bot] Starting long polling service for @StaticGem_Bot (STATIC GEM)...');
 
   const poll = async () => {
     while (isPollingActive) {

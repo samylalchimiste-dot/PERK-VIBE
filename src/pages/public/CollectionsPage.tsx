@@ -50,7 +50,7 @@ export const CollectionsPage: React.FC = () => {
             Gammes & Filtrations
           </h1>
           <p className="text-xs text-zinc-400 leading-relaxed mt-1">
-            Explorez les 3 méthodes d'extraction d'élite : Dry Sift de précision, Frozen Sift cryogénique et 2x Static 99% pure heads.
+            Explorez nos méthodes d'extraction d'élite : 3x Static 99% pure heads et WPFF Live Rosin.
           </p>
         </div>
 

@@ -113,7 +113,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featuredStyle
       {/* Product Information Section */}
       <div className="p-3 flex flex-col flex-1 justify-between gap-2">
         <div className="space-y-1">
-          {/* Category Tag (🏷️ FROZEN) */}
+          {/* Category Tag (🏷️ WPFF / 3X STATIC) */}
           <div className="flex items-center gap-1 text-[10px] font-medium text-cyan-400">
             <span>🏷️</span>
             <span className="truncate tracking-wide">{categoryLabel}</span>

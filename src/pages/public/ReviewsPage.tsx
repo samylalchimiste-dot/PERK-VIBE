@@ -17,7 +17,7 @@ export const ReviewsPage: React.FC = () => {
       author: 'Alexandre M.',
       rating: 5,
       date: 'Hier',
-      comment: 'Le 2x Static est incroyable, fonte instantanée et terpènes intacts. Livraison rapide et emballage au top.',
+      comment: 'Le 3x Static est incroyable, fonte instantanée et terpènes intacts. Livraison rapide et emballage au top.',
       badge: 'Client Vérifié',
     },
     {
@@ -25,7 +25,7 @@ export const ReviewsPage: React.FC = () => {
       author: 'Lucas D.',
       rating: 5,
       date: 'Il y a 3 jours',
-      comment: 'Frozen Sift d\'une fraîcheur remarquable. Texture bader parfaite et arôme tropical puissant.',
+      comment: 'Le WPFF Live Rosin est d\'une fraîcheur remarquable. Texture bader parfaite et arôme tropical puissant.',
       badge: 'Client Vérifié',
     },
     {

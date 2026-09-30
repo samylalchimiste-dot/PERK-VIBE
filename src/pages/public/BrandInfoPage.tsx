@@ -87,7 +87,7 @@ export const BrandInfoPage: React.FC = () => {
               {brand.brandName || 'STATIC GEM'}
             </h2>
             <p className="text-xs text-zinc-300 leading-relaxed max-w-sm mx-auto mt-2">
-              {brand.description || 'Menu officiel dédié aux filtrations exclusives : Frozen, Dry, Static et WPFF.'}
+              {brand.description || 'Menu officiel dédié aux filtrations exclusives : 3x Static et WPFF.'}
             </p>
           </div>
         </div>
@@ -121,7 +121,7 @@ export const BrandInfoPage: React.FC = () => {
           </p>
           <button
             type="button"
-            onClick={() => openLink(brand.contactLinks?.botUrl || brand.contactLinks?.telegram || 'https://t.me/TricomeLab_Bot')}
+            onClick={() => openLink(brand.contactLinks?.botUrl || brand.contactLinks?.telegram || 'https://t.me/StaticGem_Bot')}
             className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-semibold text-xs transition"
           >
             <Send className="w-3.5 h-3.5" />

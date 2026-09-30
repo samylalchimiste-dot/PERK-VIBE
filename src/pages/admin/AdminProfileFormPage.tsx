@@ -34,9 +34,8 @@ import { FRENCH_DEPARTMENTS, getCitiesForDepartment } from '../../data/frenchLoc
 import { SUPPORTED_COUNTRIES, getAllPopularCitiesForCountry, getAllRegionsForCountry } from '../../data/europeanLocations';
 
 const PRESET_CATEGORIES = [
-  '2x STATIC',
-  'FROZEN SIFT',
-  'DRY SIFT',
+  '3x STATIC',
+  'WPFF',
   'Extractions & Concentrés',
   'Farmz & Terpènes',
   'Fleurs & Top Shelf',
@@ -68,7 +67,7 @@ export const AdminProfileFormPage: React.FC = () => {
     livraisonLocale: true,
     envoiPostal: true,
   });
-  const [category, setCategory] = useState('2x STATIC');
+  const [category, setCategory] = useState('3x STATIC');
   const [customCategory, setCustomCategory] = useState('');
   const [votes, setVotes] = useState(0);
   const [badge, setBadge] = useState('');
@@ -701,7 +700,7 @@ export const AdminProfileFormPage: React.FC = () => {
                   handleAddTag();
                 }
               }}
-              placeholder="Ajouter un tag (ex: Express 24h, Certifié, 2x Static)"
+              placeholder="Ajouter un tag (ex: Express 24h, Certifié, 3x Static)"
               className="flex-1 bg-[#0a071c] border border-purple-800/60 focus:border-pink-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-purple-400/40 focus:outline-none transition"
             />
             <button
