@@ -94,20 +94,16 @@ export const ProductDetailPage: React.FC = () => {
     return () => unsub();
   }, [product]);
 
-  // Helper to get or compute pricing tiers: [5g, 10g, 25g, 50g, 100g]
-  // Calculates automatically based on price per gram (ex: 3€/g => 5g=15€, 10g=30€, 25g=75€, 50g=150€, 100g=300€)
+  // Helper to compute single 12.5G pricing tier
+  // As requested by user: ONLY ONE quantity kept (12.5G), all other quantities removed.
+  // Calculated automatically from price per gram: price = pricePerGram * 12.5
   const computePricingTiers = (p: Product): ProductPricingTier[] => {
-    if (p.pricingTiers && p.pricingTiers.length > 0) {
-      return p.pricingTiers;
-    }
-    // Price per gram (default: 3€/g if not specified or set to 3)
-    const pricePerGram = Number(p.price) > 0 ? Number(p.price) : 3;
+    const rawPrice = Number(p.pricePerGram || p.price || 3);
+    const pricePerGram = rawPrice > 30 ? Math.round((rawPrice / 12.5) * 10) / 10 : (rawPrice > 0 ? rawPrice : 3);
+    const calculated12_5 = Math.round(pricePerGram * 12.5);
+
     return [
-      { weight: '5g', price: pricePerGram * 5 },
-      { weight: '10g', price: pricePerGram * 10 },
-      { weight: '25g', price: pricePerGram * 25 },
-      { weight: '50g', price: pricePerGram * 50 },
-      { weight: '100g', price: pricePerGram * 100 },
+      { weight: '12.5G', price: calculated12_5 },
     ];
   };
 
@@ -147,7 +143,9 @@ export const ProductDetailPage: React.FC = () => {
   const currentPhoto = photos[selectedPhotoIndex] || product.mainImage || '';
   const tiers = computePricingTiers(product);
   const activeTier = selectedTier || tiers[0];
-  const unitPrice = activeTier ? activeTier.price : (product.price || 0);
+  const rawPrice = Number(product.pricePerGram || product.price || 3);
+  const pricePerGram = rawPrice > 30 ? Math.round((rawPrice / 12.5) * 10) / 10 : (rawPrice > 0 ? rawPrice : 3);
+  const unitPrice = activeTier ? activeTier.price : Math.round(pricePerGram * 12.5);
   const totalPrice = unitPrice * cartQuantity;
   const availableCount = product.availableUnits || 25;
 
@@ -182,8 +180,8 @@ export const ProductDetailPage: React.FC = () => {
       let cart = saved ? JSON.parse(saved) : [];
       if (!Array.isArray(cart)) cart = [];
 
-      const cartItemKey = `${product.id}_${activeTier?.weight || 'default'}`;
-      const existingIdx = cart.findIndex((it: any) => it.cartKey === cartItemKey || (it.product?.id === product.id && it.selectedWeight === activeTier?.weight));
+      const cartItemKey = `${product.id}_12.5G`;
+      const existingIdx = cart.findIndex((it: any) => it.cartKey === cartItemKey || (it.product?.id === product.id && (it.selectedWeight === '12.5G' || it.selectedWeight === '12.5g')));
 
       if (existingIdx >= 0) {
         cart[existingIdx].quantity += cartQuantity;
@@ -194,7 +192,7 @@ export const ProductDetailPage: React.FC = () => {
             ...product,
             price: unitPrice,
           },
-          selectedWeight: activeTier?.weight || '5g',
+          selectedWeight: '12.5G',
           quantity: cartQuantity,
         });
       }
@@ -344,47 +342,46 @@ export const ProductDetailPage: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 4. SÉLECTIONNEZ UNE QUANTITÉ (Screenshot 1: 5g, 10g, 25g, 50g, 100g)      */}
+        {/* 4. SÉLECTIONNEZ UNE QUANTITÉ (FORMAT UNIQUE 12.5G CONSERVÉ)               */}
         {/* ========================================================================= */}
         <div className="p-4 rounded-2xl bg-[#09101d] border border-cyan-500/25 space-y-3 shadow-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold tracking-wider uppercase">
               <span className="w-2 h-2 rounded-full bg-cyan-400" />
-              <span>SÉLECTIONNEZ UNE QUANTITÉ</span>
+              <span>QUANTITÉ · FORMAT UNIQUE</span>
             </div>
-            <span className="text-[11px] font-mono text-cyan-300 font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/30">
-              {Number(product.price) > 0 ? Number(product.price) : 3}€ / g
+            <span className="text-[11px] font-mono text-cyan-300 font-bold px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/30">
+              {pricePerGram}€ / g
             </span>
           </div>
 
-          {/* Grid of pricing options */}
-          <div className="grid grid-cols-3 gap-2.5">
-            {tiers.map((tier, idx) => {
-              const isSelected = activeTier?.weight === tier.weight;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    hapticFeedback('medium');
-                    playClickSound();
-                    setSelectedTier(tier);
-                  }}
-                  className={`p-3 rounded-2xl border text-center transition-all duration-150 active:scale-95 flex flex-col items-center justify-center gap-1 ${
-                    isSelected
-                      ? 'bg-[#082236] border-cyan-400 text-cyan-300 ring-2 ring-cyan-400/40 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
-                      : 'bg-[#070c17] border-cyan-900/50 hover:border-cyan-700/60 text-zinc-300'
-                  }`}
-                >
-                  <span className={`text-xs font-bold ${isSelected ? 'text-cyan-200' : 'text-zinc-200'}`}>
-                    {tier.weight}
+          {/* Single 12.5G format card (all other quantities removed as requested) */}
+          <div className="relative p-4 rounded-2xl border bg-gradient-to-br from-[#082236] via-[#091829] to-[#071322] border-cyan-400/80 shadow-[0_0_20px_rgba(6,182,212,0.2)] ring-1 ring-cyan-400/40 select-none">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-black text-cyan-100 tracking-wide font-mono">
+                    12,5G
                   </span>
-                  <span className={`text-xs font-semibold ${isSelected ? 'text-cyan-400' : 'text-cyan-500'}`}>
-                    {tier.price}.00€
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/25 text-cyan-300 border border-cyan-400/50">
+                    Format Exclusif
                   </span>
-                </button>
-              );
-            })}
+                </div>
+                <p className="text-[11px] text-zinc-400 font-mono">
+                  Calcul : 12,5g × {pricePerGram}€/g = <span className="text-cyan-300 font-semibold">{unitPrice}€</span>
+                </p>
+              </div>
+
+              <div className="text-right">
+                <div className="text-xl font-black text-cyan-300 font-mono tracking-tight">
+                  {unitPrice}.00€
+                </div>
+                <div className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium mt-0.5">
+                  <Check className="w-3 h-3 text-emerald-400" />
+                  <span>Sélectionné</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -424,7 +421,7 @@ export const ProductDetailPage: React.FC = () => {
                       {rel.name}
                     </span>
                     <span className="text-[10px] text-cyan-400 font-mono mt-0.5">
-                      {rel.price}€/g
+                      {Math.round(Number(rel.pricePerGram || rel.price || 3) * 12.5)}€ (12,5G)
                     </span>
                   </div>
                 );

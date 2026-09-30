@@ -27,7 +27,7 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
   const [hasError, setHasError] = useState<boolean>(false);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [isMuted, setIsMuted] = useState<boolean>(true); // Default muted so autoplay is guaranteed
+  const [isMuted, setIsMuted] = useState<boolean>(false); // Sound enabled automatically by default
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [showControls, setShowControls] = useState<boolean>(true);
@@ -75,39 +75,70 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
     };
   }, [videoUrl]);
 
-  // Handle Autoplay once src is ready
+  // Handle Autoplay with sound automatically activated once src is ready
   useEffect(() => {
     if (!resolvedSrc || !videoRef.current) return;
     const v = videoRef.current;
-    
-    // Telegram Mini App strict policy: MUST be muted and have playsinline to start automatically
-    v.muted = true;
-    setIsMuted(true);
 
-    const tryPlay = () => {
+    // Helper to unmute as soon as any interaction occurs
+    const setupAutoUnmuteListeners = () => {
+      const unmuteHandler = () => {
+        if (videoRef.current) {
+          videoRef.current.muted = false;
+          videoRef.current.volume = 1.0;
+          setIsMuted(false);
+        }
+        window.removeEventListener('click', unmuteHandler, true);
+        window.removeEventListener('touchstart', unmuteHandler, true);
+        window.removeEventListener('pointerdown', unmuteHandler, true);
+      };
+      window.addEventListener('click', unmuteHandler, { once: true, capture: true });
+      window.addEventListener('touchstart', unmuteHandler, { once: true, capture: true });
+      window.addEventListener('pointerdown', unmuteHandler, { once: true, capture: true });
+    };
+
+    const tryPlayWithSound = () => {
+      // 1. Try launching directly with sound activated
+      v.muted = false;
+      v.volume = 1.0;
+      setIsMuted(false);
+
       const playPromise = v.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
             setIsPlaying(true);
+            setIsMuted(false);
+            v.muted = false;
           })
           .catch((err) => {
-            console.warn('Autoplay prevented by Telegram/browser policy:', err);
-            setIsPlaying(false);
+            // If browser policy requires user gesture for audio, start video and auto-unmute on first user touch
+            console.warn('Direct unmuted play restricted by browser policy, unmuting on gesture:', err);
+            v.muted = true;
+            setIsMuted(true);
+            v.play()
+              .then(() => {
+                setIsPlaying(true);
+                setupAutoUnmuteListeners();
+              })
+              .catch((err2) => {
+                console.warn('Playback error:', err2);
+                setIsPlaying(false);
+              });
           });
       }
     };
 
     if (v.readyState >= 2) {
-      tryPlay();
+      tryPlayWithSound();
     } else {
-      v.addEventListener('loadeddata', tryPlay, { once: true });
-      v.addEventListener('canplay', tryPlay, { once: true });
+      v.addEventListener('loadeddata', tryPlayWithSound, { once: true });
+      v.addEventListener('canplay', tryPlayWithSound, { once: true });
     }
 
     return () => {
-      v.removeEventListener('loadeddata', tryPlay);
-      v.removeEventListener('canplay', tryPlay);
+      v.removeEventListener('loadeddata', tryPlayWithSound);
+      v.removeEventListener('canplay', tryPlayWithSound);
     };
   }, [resolvedSrc]);
 
@@ -229,6 +260,12 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
     <div
       ref={containerRef}
       onClick={() => {
+        // Automatically activate sound on any container interaction if not already unmuted
+        if (videoRef.current && videoRef.current.muted) {
+          videoRef.current.muted = false;
+          videoRef.current.volume = 1.0;
+          setIsMuted(false);
+        }
         setShowControls((prev) => !prev);
         if (!showControls) resetControlsTimer();
       }}
@@ -246,6 +283,14 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
         autoPlay
         muted={isMuted}
         loop
+        onPlay={() => {
+          setIsPlaying(true);
+          if (videoRef.current && videoRef.current.muted) {
+            videoRef.current.muted = false;
+            videoRef.current.volume = 1.0;
+            setIsMuted(false);
+          }
+        }}
         onTimeUpdate={() => {
           if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
         }}
@@ -258,11 +303,16 @@ export const VideoPlayerOverlay: React.FC<VideoPlayerOverlayProps> = ({
 
       {/* Top Overlay Badge & Header actions (Matching Screenshot 2) */}
       <div className={`absolute top-0 inset-x-0 p-3.5 flex items-center justify-between z-20 transition-opacity duration-200 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        {/* Left: "▶ Vidéo" cyan pill matching Screenshot 2 */}
+        {/* Left: "▶ Vidéo" cyan pill matching Screenshot 2 & Audio badge */}
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#091522]/90 border border-cyan-400/40 text-cyan-300 text-[11px] font-semibold backdrop-blur-md shadow-md">
             <span className="text-[10px] text-cyan-400">▶</span>
             <span>Vidéo</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#071911]/90 border border-emerald-500/40 text-emerald-300 text-[10px] font-medium backdrop-blur-md shadow-sm">
+            <span>🔊</span>
+            <span>{isMuted ? 'Son en cours...' : 'Son activé'}</span>
           </div>
 
           {/* Optional Switch to photo button if photos exist */}

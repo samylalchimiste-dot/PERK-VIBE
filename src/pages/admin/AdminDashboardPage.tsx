@@ -184,7 +184,7 @@ export const AdminDashboardPage: React.FC = () => {
     setIsSavingProduct(false);
     setProdFormName('');
     setProdFormDesc('');
-    setProdFormPrice('3');
+    setProdFormPrice('8');
     setProdFormCurrency(brand.currency || '€');
     setProdFormCategory(categories[0]?.id || 'cat_dry');
     setProdFormStock('AVAILABLE');
@@ -196,9 +196,9 @@ export const AdminDashboardPage: React.FC = () => {
     setProdFormImages([]);
     setProdFormVideoUrl('');
     setProdFormDetails([
-      { key: 'Filtration', value: '90u / 120u' },
+      { key: 'Filtration', value: '3x Static 99% Pure Heads' },
       { key: 'Profil Terpénique', value: 'Gas & Fruits Exotiques' },
-      { key: 'Texture', value: 'Cold Cure Bader' },
+      { key: 'Texture', value: 'Glassy Full Melt' },
       { key: 'Origine', value: 'STATIC GEM' },
     ]);
     setIsProductModalOpen(true);
@@ -211,7 +211,8 @@ export const AdminDashboardPage: React.FC = () => {
     setIsSavingProduct(false);
     setProdFormName(p.name);
     setProdFormDesc(p.description || '');
-    setProdFormPrice(String(p.price));
+    const initialPricePerGram = p.pricePerGram || (p.price > 30 ? Math.round((p.price / 12.5) * 10) / 10 : p.price);
+    setProdFormPrice(String(initialPricePerGram || 8));
     setProdFormCurrency(p.currency || '€');
     setProdFormCategory(p.categoryId || categories[0]?.id || 'cat_dry');
     setProdFormStock(p.stock);
@@ -227,9 +228,9 @@ export const AdminDashboardPage: React.FC = () => {
       ? Object.entries(p.details).map(([key, value]) => ({ key, value }))
       : [];
     setProdFormDetails(detailsArr.length > 0 ? detailsArr : [
-      { key: 'Filtration', value: '90u / 120u' },
+      { key: 'Filtration', value: '3x Static 99% Pure Heads' },
       { key: 'Profil Terpénique', value: 'Heavy Gas' },
-      { key: 'Texture', value: 'Cold Cure Bader' }
+      { key: 'Texture', value: 'Glassy Full Melt' }
     ]);
     setIsProductModalOpen(true);
   };
@@ -392,6 +393,8 @@ export const AdminDashboardPage: React.FC = () => {
     // Clean video URL
     let cleanVideoUrl = prodFormVideoUrl.trim();
 
+    const calculatedPrice12_5 = Math.round(priceNum * 12.5 * 100) / 100;
+
     setIsSavingProduct(true);
     try {
       if (editingProduct) {
@@ -400,6 +403,8 @@ export const AdminDashboardPage: React.FC = () => {
           name: trimmedName,
           description: prodFormDesc.trim(),
           price: priceNum,
+          pricePerGram: priceNum,
+          pricingTiers: [{ weight: '12.5G', price: calculatedPrice12_5 }],
           currency: prodFormCurrency || '€',
           categoryId,
           categoryName,
@@ -414,13 +419,15 @@ export const AdminDashboardPage: React.FC = () => {
           videoUrl: cleanVideoUrl || '',
           details: detailsRecord,
         });
-        showNotice('Produit mis à jour avec succès !');
+        showNotice('Produit mis à jour avec succès (Format unique 12.5G) !');
       } else {
         // Create
         await createProduct({
           name: trimmedName,
           description: prodFormDesc.trim(),
           price: priceNum,
+          pricePerGram: priceNum,
+          pricingTiers: [{ weight: '12.5G', price: calculatedPrice12_5 }],
           currency: prodFormCurrency || '€',
           categoryId,
           categoryName,
@@ -436,7 +443,7 @@ export const AdminDashboardPage: React.FC = () => {
           details: detailsRecord,
           createdAt: Date.now(),
         });
-        showNotice('Nouveau produit publié et ajouté au menu !');
+        showNotice('Nouveau produit publié au format 12.5G !');
       }
       hapticFeedback('medium');
       playClickSound();
@@ -877,11 +884,16 @@ export const AdminDashboardPage: React.FC = () => {
                             {p.categoryName || 'Catalogue'}
                           </td>
 
-                          {/* Price */}
+                          {/* Price (Calculé 12.5G) */}
                           <td className="py-3 px-4">
-                            <span className="font-bold text-white text-sm font-mono">
-                              {p.price} {p.currency || '€'}
-                            </span>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-white text-sm font-mono">
+                                {Math.round(Number(p.pricePerGram || (p.price > 30 ? p.price / 12.5 : p.price) || 8) * 12.5)} {p.currency || '€'}
+                              </span>
+                              <span className="text-[10px] text-cyan-400/90 font-mono">
+                                {p.pricePerGram || (p.price > 30 ? Math.round((p.price / 12.5) * 10) / 10 : p.price)}€/g · 12,5G
+                              </span>
+                            </div>
                           </td>
 
                           {/* Stock Selector Pill */}
@@ -1453,11 +1465,11 @@ export const AdminDashboardPage: React.FC = () => {
                     <input
                       type="number"
                       step="any"
-                      placeholder="Ex: 3"
+                      placeholder="Ex: 8"
                       value={prodFormPrice}
                       onChange={(e) => setProdFormPrice(e.target.value)}
                       required
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-zinc-500 text-xs font-mono"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-500 text-xs font-mono"
                     />
                   </div>
                   <div className="w-20">
@@ -1472,9 +1484,24 @@ export const AdminDashboardPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <p className="text-[11px] text-zinc-500 font-mono -mt-2">
-                  💡 Calcul automatique des paliers : 5g ({Number(prodFormPrice || 0) * 5}€), 10g ({Number(prodFormPrice || 0) * 10}€), 25g ({Number(prodFormPrice || 0) * 25}€), 50g ({Number(prodFormPrice || 0) * 50}€), 100g ({Number(prodFormPrice || 0) * 100}€)
-                </p>
+
+                {/* Calcul automatique du format unique 12.5G */}
+                <div className="p-3.5 rounded-2xl bg-[#081b2a] border border-cyan-500/40 space-y-1.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                      <span>⚡ FORMAT UNIQUE CONSERVÉ : 12,5G</span>
+                    </span>
+                    <span className="text-sm font-black text-cyan-200 font-mono">
+                      {(Number(prodFormPrice || 0) * 12.5).toFixed(2)} {prodFormCurrency || '€'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-mono">
+                    Calcul automatique : 12,5g × {Number(prodFormPrice || 0)}€/g = <span className="text-cyan-300 font-bold">{(Number(prodFormPrice || 0) * 12.5).toFixed(2)}€</span>
+                  </p>
+                  <p className="text-[10px] text-emerald-400 font-medium">
+                    ✓ Toutes les autres quantités (5g, 10g, 25g, 50g, 100g) ont été retirées.
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-zinc-400 font-mono uppercase mb-1">

@@ -14,8 +14,8 @@ export interface ProductPhoto {
 }
 
 export interface ProductPricingTier {
-  weight: string; // e.g. '5g', '10g', '25g', '50g', '100g'
-  price: number; // e.g. 60, 120, 260
+  weight: string; // '12.5G'
+  price: number; // calculated total for 12.5G
 }
 
 export interface Product {
@@ -24,6 +24,7 @@ export interface Product {
   description: string;
   price: number;
   currency?: string;
+  pricePerGram?: number; // Price per gram provided by admin
   pricingTiers?: ProductPricingTier[];
   availableUnits?: number; // e.g. 25
   categoryId: string;

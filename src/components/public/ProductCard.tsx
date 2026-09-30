@@ -23,6 +23,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featuredStyle
   const isSoldOut = product.stock === 'SOLD_OUT';
   const isLowStock = product.stock === 'LOW_STOCK';
   const mainImage = product.mainImage || product.images?.[0] || '';
+  const rawPrice = Number(product.pricePerGram || product.price || 3);
+  const pricePerGram = rawPrice > 30 ? Math.round((rawPrice / 12.5) * 10) / 10 : (rawPrice > 0 ? rawPrice : 3);
+  const price12_5 = Math.round(pricePerGram * 12.5);
 
   const handleClick = () => {
     hapticFeedback('light');
@@ -131,11 +134,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featuredStyle
           </h3>
         </div>
 
-        {/* Price & Action Row */}
+        {/* Price & Action Row (Format unique 12.5G) */}
         <div className="pt-2 flex items-center justify-between">
-          <div className="inline-flex items-baseline px-2.5 py-1 rounded-xl bg-[#0e192c] border border-cyan-900/60 text-cyan-300 font-bold text-xs tracking-tight">
-            <span>{product.price}</span>
-            <span className="text-[10px] ml-0.5 font-normal">{product.currency || '€'}/g</span>
+          <div className="flex flex-col">
+            <div className="inline-flex items-baseline px-2.5 py-1 rounded-xl bg-[#0e192c] border border-cyan-500/40 text-cyan-300 font-bold text-xs tracking-tight shadow-sm">
+              <span>{price12_5}</span>
+              <span className="text-[10px] ml-0.5 font-normal">{product.currency || '€'}</span>
+              <span className="text-[9px] ml-1.5 font-bold text-cyan-300 bg-cyan-950/90 px-1.5 py-0.5 rounded-md border border-cyan-500/40">12,5G</span>
+            </div>
+            <span className="text-[9px] text-zinc-400 font-mono mt-0.5 pl-0.5">
+              {pricePerGram}€ / g
+            </span>
           </div>
 
           {/* Discreet stock dot */}

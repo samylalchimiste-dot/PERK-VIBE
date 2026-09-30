@@ -82,6 +82,22 @@ export const FirestoreVideoPlayer: React.FC<FirestoreVideoPlayerProps> = ({
       src={resolvedSrc}
       poster={poster}
       className={className}
+      playsInline
+      autoPlay
+      onPlay={(e) => {
+        const el = e.currentTarget;
+        if (el.muted) {
+          el.muted = false;
+          el.volume = 1.0;
+        }
+      }}
+      onClick={(e) => {
+        const el = e.currentTarget;
+        if (el.muted) {
+          el.muted = false;
+          el.volume = 1.0;
+        }
+      }}
       {...props}
     />
   );
