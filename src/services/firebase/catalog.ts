@@ -17,16 +17,14 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage, app } from './config';
 import { uploadMediaToFirestore } from './mediaStore';
 import { Product, Category, BrandSettings, ProductStockStatus, ProductPublishStatus } from '../../types';
-import { TELEGRAM_BOT_CONFIG } from '../telegram/telegramBotConfig';
-
 export const PRODUCTS_COLLECTION = 'products';
 export const CATEGORIES_COLLECTION = 'categories';
 export const SETTINGS_COLLECTION = 'brandSettings';
 export const BRAND_SETTINGS_DOC_ID = 'main';
 
-// Default TRICOME LAB Brand Settings
+// Default STATIC GEM Brand Settings
 export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
-  brandName: 'TRICOME LAB',
+  brandName: 'STATIC GEM',
   tagline: 'Connoisseur Farm & Top-Shelf Extractions',
   description: 'Sélection exclusive de filtrations d\'exception : Dry Sift de précision, Frozen Sift cryogénique et 2x Static 99% trichome heads.',
   profileImage: '',
@@ -35,12 +33,12 @@ export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
   heroCtaText: 'Explorer le Menu',
   badgeText: 'Collection 2026',
   contactLinks: {
-    telegram: TELEGRAM_BOT_CONFIG.botUrl,
-    botUsername: TELEGRAM_BOT_CONFIG.botUsername,
-    botUrl: TELEGRAM_BOT_CONFIG.botUrl,
+    telegram: 'https://t.me/TricomeLab_Bot',
+    botUsername: 'TricomeLab_Bot',
+    botUrl: 'https://t.me/TricomeLab_Bot',
     whatsapp: '',
-    instagram: '@tricomelab',
-    channel: TELEGRAM_BOT_CONFIG.botUrl,
+    instagram: '@staticgem',
+    channel: 'https://t.me/TricomeLab_Bot',
   },
 };
 
@@ -55,25 +53,28 @@ export function subscribeBrandSettings(callback: (settings: BrandSettings) => vo
     (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as BrandSettings;
-        // If the stored name is still an old one, update to TRICOME LAB
+        // If the stored name is still an old one, update to STATIC GEM
         const isOldName = !data.brandName || 
           data.brandName === 'F2N' || 
           data.brandName === 'F2N PARIS' || 
           data.brandName === 'PERK VIBES FARMZ' || 
           data.brandName === 'TRICHOME MONTANE' || 
+          data.brandName === 'TRICOME LAB' ||
+          data.brandName === 'TRICHOMES LAB' ||
           data.brandName === 'Cartel Del Farmez' ||
-          data.brandName.includes('Cartel');
+          data.brandName.includes('Cartel') ||
+          data.brandName !== 'STATIC GEM';
 
         if (isOldName) {
           updateDoc(docRef, {
-            brandName: 'TRICOME LAB',
+            brandName: 'STATIC GEM',
             updatedAt: serverTimestamp(),
           }).catch((err) => console.warn('Could not auto-migrate brandName:', err));
         }
         callback({
           ...DEFAULT_BRAND_SETTINGS,
           ...data,
-          brandName: isOldName ? 'TRICOME LAB' : data.brandName,
+          brandName: isOldName ? 'STATIC GEM' : data.brandName,
           tagline: isOldName ? DEFAULT_BRAND_SETTINGS.tagline : (data.tagline || DEFAULT_BRAND_SETTINGS.tagline),
           description: isOldName ? DEFAULT_BRAND_SETTINGS.description : (data.description || DEFAULT_BRAND_SETTINGS.description),
           contactLinks: {

@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
     setSoundOn(initSoundState());
     const unsub = subscribeBrandSettings(setBrand);
     
-    // Listen for custom trigger from any other "TRICOME LAB" top title element
+    // Listen for custom trigger from any other "STATIC GEM" top title element
     const handleCustomTrigger = () => setIsSecretAdminOpen(true);
     window.addEventListener('open-secret-admin', handleCustomTrigger);
 
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, onBack, title }) => {
     }
   };
 
-  const brandName = brand?.brandName || 'TRICOME LAB';
+  const brandName = brand?.brandName || 'STATIC GEM';
 
   return (
     <>

@@ -42,7 +42,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, featuredStyle
   };
 
   const categoryLabel = (product.categoryName || 'EXTRACTION').toUpperCase();
-  const farmLabel = (product.details?.['Origine'] || 'Perk Vibes Farmz').replace('Perk Vibes Farmz - ', '');
+  const rawOrigine = product.details?.['Origine'] || 'STATIC GEM';
+  const farmLabel = (rawOrigine.includes('TRICOME') || rawOrigine.includes('TRICHOME') || rawOrigine === 'Perk Vibes Farmz')
+    ? 'STATIC GEM'
+    : rawOrigine.replace('STATIC GEM - ', '').replace('Perk Vibes Farmz - ', '').replace('TRICOME LAB - ', '');
 
   return (
     <div

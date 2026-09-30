@@ -133,7 +133,7 @@ export const BrandCrestLogo: React.FC<BrandCrestLogoProps> = ({
         <line x1="92" y1="106" x2="108" y2="106" stroke="#ca8a04" strokeWidth="1" strokeDasharray="2 1.5" />
         <line x1="95" y1="110" x2="105" y2="110" stroke="#ca8a04" strokeWidth="1" strokeDasharray="2 1.5" />
 
-        {/* Gold Ribbon Banner with TRICHOME MONTANE */}
+        {/* Gold Ribbon Banner with STATIC GEM */}
         <path
           d="M 24 135 L 42 125 L 158 125 L 176 135 L 164 158 L 100 162 L 36 158 Z"
           fill="#050811"
@@ -148,7 +148,7 @@ export const BrandCrestLogo: React.FC<BrandCrestLogoProps> = ({
           opacity="0.15"
         />
 
-        {/* Text TRICOME LAB */}
+        {/* Text STATIC GEM */}
         <text
           x="100"
           y="144"
@@ -159,7 +159,7 @@ export const BrandCrestLogo: React.FC<BrandCrestLogoProps> = ({
           fontFamily="'Montserrat', 'Arial Black', sans-serif"
           letterSpacing="1.8"
         >
-          TRICOME
+          STATIC
         </text>
         <text
           x="100"
@@ -171,7 +171,7 @@ export const BrandCrestLogo: React.FC<BrandCrestLogoProps> = ({
           fontFamily="'Montserrat', 'Arial Black', sans-serif"
           letterSpacing="2.8"
         >
-          LAB
+          GEM
         </text>
 
         {/* Small Bottom Star */}

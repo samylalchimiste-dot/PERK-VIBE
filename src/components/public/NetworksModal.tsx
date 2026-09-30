@@ -12,28 +12,28 @@ export const NetworksModal: React.FC<NetworksModalProps> = ({ isOpen, onClose })
 
   const networks = [
     {
-      title: 'Canal Officiel TRICOME LAB',
-      handle: '@TricomeLab',
+      title: 'Canal Officiel STATIC GEM',
+      handle: '@StaticGem',
       desc: 'Drops officiels, nouveaux arrivages Static, Frozen & Dry',
-      link: 'https://t.me/F2nOfficiel_Bot',
+      link: 'https://t.me/TricomeLab_Bot',
       icon: Send,
       badge: 'Principal',
       color: 'from-amber-500 to-yellow-600',
     },
     {
       title: 'Communauté & Chat Officiel',
-      handle: '@TricomeLab_Chat',
+      handle: '@StaticGem_Chat',
       desc: 'Échanges en direct entre connaisseurs et retours de dégustation',
-      link: 'https://t.me/F2nOfficiel_Bot',
+      link: 'https://t.me/TricomeLab_Bot',
       icon: MessageSquare,
       badge: 'Live Chat',
       color: 'from-purple-600 to-indigo-600',
     },
     {
       title: 'Support & Bot Commandes',
-      handle: '@F2nOfficiel_Bot',
+      handle: '@StaticGem_Bot',
       desc: 'Prise de commande directe, catalogue et assistance sécurisée',
-      link: 'https://t.me/F2nOfficiel_Bot',
+      link: 'https://t.me/TricomeLab_Bot',
       icon: ShieldCheck,
       badge: '24/7',
       color: 'from-cyan-500 to-blue-600',
@@ -63,7 +63,7 @@ export const NetworksModal: React.FC<NetworksModalProps> = ({ isOpen, onClose })
           </div>
           <div>
             <h3 className="font-extrabold text-base text-white">
-              Réseaux Officiels TRICOME LAB
+              Réseaux Officiels STATIC GEM
             </h3>
             <p className="text-[11px] text-purple-300">
               Rejoignez tous les canaux officiels de la farm

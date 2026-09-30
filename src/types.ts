@@ -1,5 +1,5 @@
 // ==========================================
-// CATALOGUE & MENU TYPES (TRICOME LAB)
+// CATALOGUE & MENU TYPES (STATIC GEM)
 // ==========================================
 
 export type ProductStockStatus = 'AVAILABLE' | 'LOW_STOCK' | 'SOLD_OUT';

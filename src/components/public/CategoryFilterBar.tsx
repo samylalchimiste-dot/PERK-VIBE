@@ -160,7 +160,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
           )}
         </div>
 
-        {/* Dropdown Farms - TRICHOME MONTANE */}
+        {/* Dropdown Farms - STATIC GEM */}
         <div className="relative flex-1" ref={farmMenuRef}>
           <button
             type="button"
@@ -174,7 +174,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
             <div className="flex items-center gap-2 truncate">
               <span className="text-amber-400">⚡</span>
               <span className="truncate">
-                {selectedFarm === 'ALL' ? 'TRICOME LAB' : selectedFarm}
+                {selectedFarm === 'ALL' ? 'STATIC GEM' : selectedFarm}
               </span>
             </div>
             <ChevronDown
@@ -206,7 +206,7 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
 
               <div className="h-px bg-zinc-800 my-1" />
 
-              {['TRICOME LAB'].map((farm) => {
+              {['STATIC GEM'].map((farm) => {
                 const active = selectedFarm === farm;
                 return (
                   <button

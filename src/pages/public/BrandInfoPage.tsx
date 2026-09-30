@@ -84,7 +84,7 @@ export const BrandInfoPage: React.FC = () => {
               Connoisseur Farm & Top-Shelf Extractions
             </span>
             <h2 className="text-xl font-extrabold tracking-tight text-white uppercase mt-0.5" style={{ fontFamily: "'Bebas Neue', 'Montserrat', sans-serif" }}>
-              {brand.brandName || 'TRICOME LAB'}
+              {brand.brandName || 'STATIC GEM'}
             </h2>
             <p className="text-xs text-zinc-300 leading-relaxed max-w-sm mx-auto mt-2">
               {brand.description || 'Menu officiel dédié aux filtrations exclusives : Frozen, Dry, Static et WPFF.'}
@@ -121,7 +121,7 @@ export const BrandInfoPage: React.FC = () => {
           </p>
           <button
             type="button"
-            onClick={() => openLink(brand.contactLinks?.telegram || 'https://t.me/F2nOfficiel_Bot')}
+            onClick={() => openLink(brand.contactLinks?.botUrl || brand.contactLinks?.telegram || 'https://t.me/TricomeLab_Bot')}
             className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-semibold text-xs transition"
           >
             <Send className="w-3.5 h-3.5" />

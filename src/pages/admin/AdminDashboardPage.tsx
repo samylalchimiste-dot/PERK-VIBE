@@ -199,7 +199,7 @@ export const AdminDashboardPage: React.FC = () => {
       { key: 'Filtration', value: '90u / 120u' },
       { key: 'Profil Terpénique', value: 'Gas & Fruits Exotiques' },
       { key: 'Texture', value: 'Cold Cure Bader' },
-      { key: 'Origine', value: 'TRICOME LAB' },
+      { key: 'Origine', value: 'STATIC GEM' },
     ]);
     setIsProductModalOpen(true);
   };
@@ -564,7 +564,7 @@ export const AdminDashboardPage: React.FC = () => {
   // ==========================================
   // BRAND SETTINGS TAB STATE & ACTIONS
   // ==========================================
-  const [brandFormName, setBrandFormName] = useState(brand.brandName || 'TRICOME LAB');
+  const [brandFormName, setBrandFormName] = useState(brand.brandName || 'STATIC GEM');
   const [brandFormTagline, setBrandFormTagline] = useState(brand.tagline || '');
   const [brandFormDesc, setBrandFormDesc] = useState(brand.description || '');
   const [brandFormCurrency, setBrandFormCurrency] = useState(brand.currency || '€');
@@ -586,7 +586,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   // Sync brand state when loaded
   useEffect(() => {
-    setBrandFormName(brand.brandName || 'TRICOME LAB');
+    setBrandFormName(brand.brandName || 'STATIC GEM');
     setBrandFormTagline(brand.tagline || '');
     setBrandFormDesc(brand.description || '');
     setBrandFormCurrency(brand.currency || '€');
@@ -681,7 +681,7 @@ export const AdminDashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white uppercase">
-            Gestion du Menu · TRICOME LAB
+            Gestion du Menu · STATIC GEM
           </h1>
           <p className="text-xs text-zinc-400 font-mono mt-0.5">
             Gérez vos produits (Dry Sift, Frozen Sift, 2x Static), stocks et identité.
@@ -696,7 +696,7 @@ export const AdminDashboardPage: React.FC = () => {
               setItemToDelete({ type: 'reseed_farmz' });
             }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-600/40 text-amber-300 hover:text-white text-xs font-semibold transition"
-            title="Réinitialiser et recharger le menu officiel TRICOME LAB"
+            title="Réinitialiser et recharger le menu officiel STATIC GEM"
           >
             <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
             <span>Recharger Menu Officiel</span>
@@ -1063,7 +1063,7 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="bg-[#111114] p-5 rounded-3xl border border-zinc-800/80 space-y-6">
             <div>
               <h2 className="text-base font-extrabold uppercase tracking-tight text-white">
-                Identité Visuelle & Boutique TRICOME LAB
+                Identité Visuelle & Boutique STATIC GEM
               </h2>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Configurez la photo de profil, la bannière d'arrière-plan, les textes et les liens officiels.
@@ -1373,7 +1373,7 @@ export const AdminDashboardPage: React.FC = () => {
                         { key: 'Filtration', value: '2x Static 99% Pure Heads' },
                         { key: 'Profil Terpénique', value: 'Heavy Gas & Sweet Candy' },
                         { key: 'Texture', value: 'Glassy Full Melt' },
-                        { key: 'Origine', value: 'TRICOME LAB' },
+                        { key: 'Origine', value: 'STATIC GEM' },
                       ]);
                       if (!prodFormName) setProdFormName('Gelato 33 2x Static');
                       hapticFeedback('medium');
@@ -1392,7 +1392,7 @@ export const AdminDashboardPage: React.FC = () => {
                         { key: 'Filtration', value: 'Fresh Frozen Live Rosin 90u-120u' },
                         { key: 'Profil Terpénique', value: 'Fresh Terps & Fruits Exotiques' },
                         { key: 'Texture', value: 'Cold Cure Jam' },
-                        { key: 'Origine', value: 'TRICOME LAB' },
+                        { key: 'Origine', value: 'STATIC GEM' },
                       ]);
                       if (!prodFormName) setProdFormName('Papaya Fresh Frozen WPFF');
                       hapticFeedback('medium');
@@ -1411,7 +1411,7 @@ export const AdminDashboardPage: React.FC = () => {
                         { key: 'Filtration', value: '90u - 120u Traditionnel' },
                         { key: 'Profil Terpénique', value: 'Terreux & Épicé / Piquant' },
                         { key: 'Texture', value: 'Sable Doré affiné' },
-                        { key: 'Origine', value: 'TRICOME LAB' },
+                        { key: 'Origine', value: 'STATIC GEM' },
                       ]);
                       if (!prodFormName) setProdFormName('Kosher Kush Dry Sift 120u');
                       hapticFeedback('medium');
@@ -1430,7 +1430,7 @@ export const AdminDashboardPage: React.FC = () => {
                         { key: 'Filtration', value: '73u - 90u Cryogénique' },
                         { key: 'Profil Terpénique', value: 'Fresh Frozen Terps Fruité' },
                         { key: 'Texture', value: 'Cold Cure Bader' },
-                        { key: 'Origine', value: 'TRICOME LAB' },
+                        { key: 'Origine', value: 'STATIC GEM' },
                       ]);
                       if (!prodFormName) setProdFormName('Tangie Papaya Frozen Sift 90u');
                       hapticFeedback('medium');
@@ -1936,7 +1936,7 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-[10px] text-zinc-500 font-mono hidden sm:block">
-                    {isUploadingImage ? 'Photos en cours d\'optimisation...' : 'Catalogue officiel TRICOME LAB'}
+                    {isUploadingImage ? 'Photos en cours d\'optimisation...' : 'Catalogue officiel STATIC GEM'}
                   </div>
                 )}
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">

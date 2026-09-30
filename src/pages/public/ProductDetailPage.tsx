@@ -158,8 +158,8 @@ export const ProductDetailPage: React.FC = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${product.name} — ${brand.brandName || 'TRICOME LAB'}`,
-          text: `Découvrez ${product.name} sur le menu officiel ${brand.brandName || 'TRICOME LAB'}`,
+          title: `${product.name} — ${brand.brandName || 'STATIC GEM'}`,
+          text: `Découvrez ${product.name} sur le menu officiel ${brand.brandName || 'STATIC GEM'}`,
           url,
         });
         return;
